@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ScholarAI - Documents</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
+    .navbar {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 16px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+    .navbar h1 { font-size: 22px; }
+    .container { display: flex; min-height: calc(100vh - 60px); }
+    .sidebar {
+      width: 220px;
+      background: white;
+      padding: 24px 16px;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+    }
+    .sidebar a {
+      display: block;
+      padding: 12px 16px;
+      color: #555;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: #667eea;
+      color: white;
+    }
+    .main { flex: 1; padding: 28px; }
+    .page-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 6px;
+    }
+    .page-sub {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .progress-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .progress-card h3 {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 16px;
+    }
+    .progress-bar-bg {
+      background: #eee;
+      border-radius: 10px;
+      height: 16px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+    .progress-text {
+      font-size: 14px;
+      color: #667eea;
+      font-weight: 600;
+    }
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 18px;
+    }
+    .doc-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 4px solid #eee;
+    }
+    .doc-card.uploaded {
+      border-left-color: #4caf50;
+    }
+    .doc-card.missing {
+      border-left-color: #ff9800;
+    }
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .doc-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+    }
+    .doc-status {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-done {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .status-missing {
+      background: #fff3e0;
+      color: #e65100;
+    }
+    .upload-area {
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-area:hover {
+      border-color: #667eea;
+      background: #f5f7ff;
+    }
+    .upload-area input {
+      display: none;
+    }
+    .upload-label {
+      cursor: pointer;
+      color: #667eea;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .upload-btn {
+      margin-top: 10px;
+      padding: 8px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      width: 100%;
+    }
+    .upload-btn:hover { background: #764ba2; }
+    .upload-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .msg {
+      margin-top: 8px;
+      font-size: 13px;
+      text-align: center;
+    }
+    .success { color: #2e7d32; }
+    .error { color: red; }
+    .tip {
+      background: #e3f2fd;
+      border-left: 4px solid #1565c0;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: #1565c0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <h1>🎓 ScholarAI</h1>
+  <span>Welcome, <strong id="user-name">Student</strong> 👋</span>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/profile">👤 My Profile</a>
+    <a href="/documents" class="active">📄 Documents</a>
+    <a href="#">🔖 Saved</a>
+    <a href="/" onclick="localStorage.clear()">🚪 Logout</a>
+  </div>
+
+  <div class="main">
+
+    <div class="page-title">📄 My Documents</div>
+    <div class="page-sub">Upload your documents to improve scholarship matching!</div>
+
+    <div class="tip">
+      💡 Uploading all documents increases your scholarship eligibility score significantly!
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-card">
+      <h3>📊 Document Completion</h3>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+      <span class="progress-text" id="progress-text">0% Complete</span>
+    </div>
+
+    <!-- DOCUMENT CARDS -->
+    <div class="docs-grid" id="docs-grid">
+      <p style="color:#888;">Loading documents...</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const userName = localStorage.getItem("user_name");
+  const userEmail = localStorage.getItem("user_email");
+  if (userName) document.getElementById("user-name").textContent = userName;
+
+  const docIcons = {
+    "Aadhaar Card": "🪪",
+    "Income Certificate": "💰",
+    "Caste Certificate": "📋",
+    "Marksheet": "📝",
+    "Bank Passbook": "🏦",
+    "Domicile Certificate": "🏠"
+  };
+
+  function loadDocuments() {
+    fetch("/get_documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail })
+    })
+    .then(r => r.json())
+    .then(data => {
+      const grid = document.getElementById("docs-grid");
+      const percent = data.percent;
+
+      document.getElementById("progress-fill").style.width = percent + "%";
+      document.getElementById("progress-text").textContent = percent + "% Complete";
+
+      grid.innerHTML = "";
+      data.documents.forEach(doc => {
+        const icon = docIcons[doc.name] || "📄";
+        grid.innerHTML += `
+          <div class="doc-card ${doc.uploaded ? 'uploaded' : 'missing'}" id="card-${doc.name.replace(/ /g,'_')}">
+            <div class="doc-header">
+              <span class="doc-name">${icon} ${doc.name}</span>
+              <span class="doc-status ${doc.uploaded ? 'status-done' : 'status-missing'}">
+                ${doc.uploaded ? '✅ Uploaded' : '⚠️ Missing'}
+              </span>
+            </div>
+            ${doc.uploaded
+              ? `<p style="color:#4caf50;font-size:13px;">✅ Document uploaded successfully!</p>`
+              : `
+                <div class="upload-area" onclick="document.getElementById('file-${doc.name.replace(/ /g,'_')}').click()">
+                  <input type="file" id="file-${doc.name.replace(/ /g,'_')}"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onchange="previewFile(this, '${doc.name}')">
+                  <p style="font-size:13px;color:#888;margin-bottom:6px;">📎 Click to select file</p>
+                  <span class="upload-label">PDF, JPG or PNG accepted</span>
+                  <p id="preview-${doc.name.replace(/ /g,'_')}" style="font-size:12px;color:#667eea;margin-top:4px;"></p>
+                </div>
+                <button class="upload-btn" id="btn-${doc.name.replace(/ /g,'_')}"
+                  onclick="uploadDoc('${doc.name}')" disabled>
+                  📤 Upload ${doc.name}
+                </button>
+                <p class="msg" id="msg-${doc.name.replace(/ /g,'_')}"></p>
+              `
+            }
+          </div>`;
+      });
+    });
+  }
+
+  function previewFile(input, docName) {
+    const key = docName.replace(/ /g,'_');
+    const preview = document.getElementById("preview-" + key);
+    const btn = document.getElementById("btn-" + key);
+    if (input.files && input.files[0]) {
+      preview.textContent = "Selected: " + input.files[0].name;
+      btn.disabled = false;
+    }
+  }
+
+  function uploadDoc(docName) {
+    const key = docName.replace(/ /g,'_');
+    const fileInput = document.getElementById("file-" + key);
+    const btn = document.getElementById("btn-" + key);
+    const msg = document.getElementById("msg-" + key);
+
+    if (!fileInput.files[0]) return;
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    formData.append("email", userEmail);
+    formData.append("doc_type", docName);
+
+    btn.disabled = true;
+    btn.textContent = "Uploading...";
+    msg.className = "msg";
+    msg.textContent = "";
+
+    fetch("/upload_document", {
+      method: "POST",
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.message) {
+        msg.className = "msg success";
+        msg.textContent = "✅ " + data.message;
+        setTimeout(() => loadDocuments(), 1000);
+      } else {
+        msg.className = "msg error";
+        msg.textContent = "❌ " + data.error;
+        btn.disabled = false;
+        btn.textContent = "📤 Upload " + docName;
+      }
+    })
+    .catch(() => {
+      msg.className = "msg error";
+      msg.textContent = "❌ Upload failed. Try again.";
+      btn.disabled = false;
+      btn.textContent = "📤 Upload " + docName;
+    });
+  }
+
+  loadDocuments();
+</script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ScholarAI - Saved Scholarships</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
+    .navbar {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 16px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+    .navbar h1 { font-size: 22px; }
+    .container { display: flex; min-height: calc(100vh - 60px); }
+    .sidebar {
+      width: 220px;
+      background: white;
+      padding: 24px 16px;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+    }
+    .sidebar a {
+      display: block;
+      padding: 12px 16px;
+      color: #555;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: #667eea;
+      color: white;
+    }
+    .main { flex: 1; padding: 28px; }
+    .page-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 6px;
+    }
+    .page-sub {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      flex: 1;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .stat-card h3 { font-size: 28px; color: #667eea; }
+    .stat-card p { color: #888; font-size: 13px; margin-top: 4px; }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 4px solid #667eea;
+    }
+    .card h3 { font-size: 15px; color: #333; margin-bottom: 8px; }
+    .card p { font-size: 13px; color: #666; margin-bottom: 4px; }
+    .type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .type-national { background: #e3f2fd; color: #1565c0; }
+    .type-state { background: #fff3e0; color: #e65100; }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .apply-btn {
+      flex: 1;
+      padding: 8px 14px;
+      background: #667eea;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+    .apply-btn:hover { background: #764ba2; }
+    .remove-btn {
+      padding: 8px 14px;
+      background: #ff4757;
+      color: white;
+      border-radius: 6px;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .remove-btn:hover { background: #cc0000; }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #888;
+      grid-column: 1/-1;
+    }
+    .empty-state h3 { font-size: 20px; margin-bottom: 12px; }
+    .empty-state a {
+      color: #667eea;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .tip {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: #2e7d32;
+    }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <h1>🎓 ScholarAI</h1>
+  <span>Welcome, <strong id="user-name">Student</strong> 👋</span>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/profile">👤 My Profile</a>
+    <a href="/documents">📄 Documents</a>
+    <a href="/saved" class="active">🔖 Saved</a>
+    <a href="/" onclick="localStorage.clear()">🚪 Logout</a>
+  </div>
+
+  <div class="main">
+
+    <div class="page-title">🔖 Saved Scholarships</div>
+    <div class="page-sub">Your bookmarked scholarships — apply before deadlines!</div>
+
+    <div class="tip">
+      💡 Go to Dashboard and click the 🔖 Save button on any scholarship card to bookmark it here!
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <h3 id="saved-count">0</h3>
+        <p>Saved Scholarships</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="deadline-count">0</h3>
+        <p>Deadlines This Year</p>
+      </div>
+    </div>
+
+    <div class="cards-grid" id="saved-cards">
+      <p style="color:#888;">Loading saved scholarships...</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const userName = localStorage.getItem("user_name");
+  const userEmail = localStorage.getItem("user_email");
+  if (userName) document.getElementById("user-name").textContent = userName;
+
+  function loadSaved() {
+    fetch("/get_saved", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail })
+    })
+    .then(r => r.json())
+    .then(data => {
+      const container = document.getElementById("saved-cards");
+      document.getElementById("saved-count").textContent = data.count;
+      document.getElementById("deadline-count").textContent = data.count;
+
+      if (data.count === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <h3>📭 No saved scholarships yet!</h3>
+            <p style="margin-bottom:16px;">Go to dashboard and click Save on scholarships you like.</p>
+            <a href="/dashboard">← Go to Dashboard</a>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = "";
+      data.saved.forEach(s => {
+        const isState = s.type === "Odisha State";
+        const typeBadge = isState
+          ? `<span class="type-badge type-state">📍 Odisha State</span>`
+          : `<span class="type-badge type-national">🏛️ National</span>`;
+
+        container.innerHTML += `
+          <div class="card" id="card-${s.name.replace(/ /g,'_')}">
+            <h3>${s.name}</h3>
+            ${typeBadge}
+            <p>🏛️ ${s.provider}</p>
+            <p>💰 ${s.amount}</p>
+            <p>📅 Deadline: ${s.deadline}</p>
+            <div class="btn-row">
+              <a class="apply-btn"
+                href="https://www.google.com/search?q=${encodeURIComponent(s.name + ' official apply 2026')}"
+                target="_blank">
+                Apply Now →
+              </a>
+              <button class="remove-btn"
+                onclick="removeScholarship('${s.name}')">
+                🗑 Remove
+              </button>
+            </div>
+          </div>`;
+      });
+    })
+    .catch(() => {
+      document.getElementById("saved-cards").innerHTML =
+        "<p style='color:red;'>Could not load. Make sure server is running.</p>";
+    });
+  }
+
+  function removeScholarship(name) {
+    fetch("/unsave_scholarship", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail, name: name })
+    })
+    .then(r => r.json())
+    .then(data => {
+      const key = name.replace(/ /g,'_');
+      const card = document.getElementById("card-" + key);
+      if (card) card.remove();
+      const remaining = document.querySelectorAll(".card").length;
+      document.getElementById("saved-count").textContent = remaining;
+      document.getElementById("deadline-count").textContent = remaining;
+      if (remaining === 0) loadSaved();
+    });
+  }
+
+  loadSaved();
+</script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ScholarAI - My Profile</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
+    .navbar {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 16px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+    .navbar h1 { font-size: 22px; }
+    .container { display: flex; min-height: calc(100vh - 60px); }
+    .sidebar {
+      width: 220px;
+      background: white;
+      padding: 24px 16px;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+    }
+    .sidebar a {
+      display: block;
+      padding: 12px 16px;
+      color: #555;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .sidebar a:hover, .sidebar a.active { background: #667eea; color: white; }
+    .main { flex: 1; padding: 28px; }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 600px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .card h2 { color: #667eea; margin-bottom: 6px; }
+    .card p { color: #888; font-size: 14px; margin-bottom: 24px; }
+    label { display: block; font-weight: 600; color: #333; margin-bottom: 6px; font-size: 14px; }
+    select, input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 18px;
+      outline: none;
+    }
+    select:focus, input:focus { border-color: #667eea; }
+    button {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    .msg { text-align: center; margin-top: 12px; font-size: 14px; }
+    .success { color: green; }
+    .error { color: red; }
+    .tip {
+      background: #e8f4fd;
+      border-left: 4px solid #667eea;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <h1>🎓 ScholarAI</h1>
+  <span>Welcome, <strong id="user-name">Student</strong> 👋</span>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/profile" class="active">👤 My Profile</a>
+    <a href="#">📄 Documents</a>
+    <a href="#">🔖 Saved</a>
+    <a href="/" onclick="localStorage.clear()">🚪 Logout</a>
+  </div>
+
+  <div class="main">
+    <div class="card">
+      <h2>👤 My Profile</h2>
+      <p>Fill in your details to get AI-matched scholarships on your dashboard!</p>
+
+      <div class="tip">
+        💡 The more details you fill, the better your scholarship matches will be!
+      </div>
+
+      <label>Full Name</label>
+      <input type="text" id="name" placeholder="Your full name" readonly>
+
+      <label>Email</label>
+      <input type="email" id="email" placeholder="Your email" readonly>
+
+      <label>Education Level</label>
+      <select id="education">
+        <option value="">-- Select Education --</option>
+        <option value="10th">10th / Matriculation</option>
+        <option value="12th">12th / Intermediate</option>
+        <option value="diploma">Diploma</option>
+        <option value="undergraduate">Undergraduate (B.Tech / B.Sc / BA / B.Com)</option>
+        <option value="postgraduate">Postgraduate (M.Tech / M.Sc / MA)</option>
+      </select>
+
+      <label>Course / Stream</label>
+      <select id="course">
+        <option value="">-- Select Course --</option>
+        <option value="engineering">Engineering / Technology</option>
+        <option value="science">Science</option>
+        <option value="arts">Arts / Humanities</option>
+        <option value="commerce">Commerce</option>
+        <option value="medical">Medical / Pharmacy</option>
+        <option value="law">Law</option>
+        <option value="management">Management / MBA</option>
+        <option value="diploma">Diploma / ITI</option>
+      </select>
+
+      <label>Family Annual Income (in Rupees)</label>
+      <select id="income">
+        <option value="">-- Select Income Range --</option>
+        <option value="100000">Below 1 Lakh</option>
+        <option value="250000">1 Lakh - 2.5 Lakh</option>
+        <option value="500000">2.5 Lakh - 5 Lakh</option>
+        <option value="800000">5 Lakh - 8 Lakh</option>
+        <option value="1200000">Above 8 Lakh</option>
+      </select>
+
+      <label>Caste Category</label>
+      <select id="category">
+        <option value="">-- Select Category --</option>
+        <option value="general">General</option>
+        <option value="obc">OBC</option>
+        <option value="sc">SC (Scheduled Caste)</option>
+        <option value="st">ST (Scheduled Tribe)</option>
+        <option value="minority">Minority</option>
+      </select>
+
+      <label>State</label>
+      <select id="state">
+        <option value="">-- Select State --</option>
+        <option value="odisha">Odisha</option>
+        <option value="andhra pradesh">Andhra Pradesh</option>
+        <option value="bihar">Bihar</option>
+        <option value="delhi">Delhi</option>
+        <option value="gujarat">Gujarat</option>
+        <option value="karnataka">Karnataka</option>
+        <option value="kerala">Kerala</option>
+        <option value="madhya pradesh">Madhya Pradesh</option>
+        <option value="maharashtra">Maharashtra</option>
+        <option value="rajasthan">Rajasthan</option>
+        <option value="tamil nadu">Tamil Nadu</option>
+        <option value="telangana">Telangana</option>
+        <option value="uttar pradesh">Uttar Pradesh</option>
+        <option value="west bengal">West Bengal</option>
+        <option value="other">Other</option>
+      </select>
+
+      <button onclick="saveProfile()">💾 Save Profile & Get Matched</button>
+      <p class="msg" id="msg"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Load saved data
+  const name = localStorage.getItem("user_name");
+  const email = localStorage.getItem("user_email");
+  if (name) document.getElementById("name").value = name;
+  if (email) document.getElementById("email").value = email;
+
+  // Load existing profile
+  if (email) {
+    fetch("/get_profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.education) document.getElementById("education").value = data.education;
+      if (data.income) document.getElementById("income").value = data.income;
+      if (data.category) document.getElementById("category").value = data.category;
+      if (data.state) document.getElementById("state").value = data.state;
+      if (data.course) document.getElementById("course").value = data.course;
+    });
+  }
+
+  function saveProfile() {
+    const email = localStorage.getItem("user_email");
+    const education = document.getElementById("education").value;
+    const income = document.getElementById("income").value;
+    const category = document.getElementById("category").value;
+    const state = document.getElementById("state").value;
+    const course = document.getElementById("course").value;
+    const msg = document.getElementById("msg");
+
+    if (!education || !income || !category || !state || !course) {
+      msg.className = "msg error";
+      msg.textContent = "Please fill all fields!";
+      return;
+    }
+
+    fetch("/save_profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, education, income, category, state, course })
+    })
+    .then(r => r.json())
+    .then(data => {
+      msg.className = "msg success";
+      msg.textContent = "Profile saved! Redirecting to dashboard...";
+      setTimeout(() => window.location.href = "/dashboard", 1500);
+    });
+  }
+</script>
+</body>
+</html>

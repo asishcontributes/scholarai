@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScholarAI - AI Powered Scholarship Finder</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+
+    /* NAVBAR */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 16px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+      z-index: 1000;
+    }
+    .logo { font-size: 24px; font-weight: 800; color: #667eea; }
+    .logo span { color: #764ba2; }
+    .nav-links { display: flex; gap: 20px; align-items: center; }
+    .nav-link {
+      color: #555;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 15px;
+    }
+    .nav-link:hover { color: #667eea; }
+    .nav-btn {
+      padding: 10px 24px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    .nav-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 20px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+      top: -200px; right: -200px;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+      bottom: -150px; left: -150px;
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 800px; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 25px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .hero h1 {
+      font-size: 56px;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
+    .hero h1 span {
+      background: rgba(255,255,255,0.3);
+      padding: 0 8px;
+      border-radius: 8px;
+    }
+    .hero p {
+      font-size: 20px;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+    .hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      padding: 16px 40px;
+      background: white;
+      color: #667eea;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      transition: all 0.3s;
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+    .btn-secondary {
+      padding: 16px 40px;
+      background: transparent;
+      color: white;
+      border: 2px solid white;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); transform: translateY(-3px); }
+
+    /* STATS */
+    .stats-bar {
+      background: white;
+      padding: 30px 40px;
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      flex-wrap: wrap;
+    }
+    .stat-item { text-align: center; }
+    .stat-item h3 { font-size: 32px; font-weight: 800; color: #667eea; }
+    .stat-item p { font-size: 13px; color: #888; margin-top: 4px; }
+
+    /* FEATURES */
+    .section { padding: 80px 40px; }
+    .section-title {
+      text-align: center;
+      font-size: 36px;
+      font-weight: 800;
+      color: #333;
+      margin-bottom: 12px;
+    }
+    .section-sub {
+      text-align: center;
+      color: #888;
+      font-size: 16px;
+      margin-bottom: 50px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .feature-card {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      transition: all 0.3s;
+      border-top: 4px solid transparent;
+    }
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 40px rgba(102,126,234,0.15);
+      border-top-color: #667eea;
+    }
+    .feature-icon { font-size: 40px; margin-bottom: 16px; }
+    .feature-card h3 { font-size: 18px; color: #333; margin-bottom: 10px; }
+    .feature-card p { font-size: 14px; color: #666; line-height: 1.6; }
+
+    /* HOW IT WORKS */
+    .how-section {
+      background: linear-gradient(135deg, #f5f7ff, #fdf5ff);
+      padding: 80px 40px;
+    }
+    .steps {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+    }
+    .step {
+      text-align: center;
+      flex: 1;
+      min-width: 180px;
+    }
+    .step-num {
+      width: 60px; height: 60px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      margin: 0 auto 16px;
+    }
+    .step h3 { font-size: 16px; color: #333; margin-bottom: 8px; }
+    .step p { font-size: 13px; color: #888; }
+    .step-arrow {
+      font-size: 24px;
+      color: #667eea;
+      display: flex;
+      align-items: center;
+      padding-top: 20px;
+    }
+
+    /* SCHOLARSHIPS PREVIEW */
+    .preview-section { padding: 80px 40px; background: white; }
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto 40px;
+    }
+    .preview-card {
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 20px;
+      border-left: 4px solid #667eea;
+      transition: all 0.3s;
+    }
+    .preview-card:hover { box-shadow: 0 8px 30px rgba(102,126,234,0.15); transform: translateY(-3px); }
+    .preview-card h4 { font-size: 15px; color: #333; margin-bottom: 8px; }
+    .preview-card p { font-size: 13px; color: #666; margin-bottom: 4px; }
+    .preview-badge {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    /* LANGUAGES */
+    .lang-section {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 60px 40px;
+      text-align: center;
+      color: white;
+    }
+    .lang-section h2 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+    .lang-section p { font-size: 16px; opacity: 0.9; margin-bottom: 30px; }
+    .lang-badges { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .lang-badge {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 10px 24px;
+      border-radius: 25px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    /* TESTIMONIALS */
+    .testimonials { padding: 80px 40px; background: #f8f9ff; }
+    .testimonial-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .testimonial-card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .stars { color: #ffc107; font-size: 18px; margin-bottom: 12px; }
+    .testimonial-card p { font-size: 14px; color: #555; line-height: 1.7; margin-bottom: 16px; }
+    .testimonial-author { font-weight: 700; color: #333; font-size: 14px; }
+    .testimonial-role { font-size: 12px; color: #888; }
+
+    /* CTA */
+    .cta-section {
+      padding: 80px 40px;
+      text-align: center;
+      background: white;
+    }
+    .cta-section h2 { font-size: 40px; font-weight: 800; color: #333; margin-bottom: 16px; }
+    .cta-section p { font-size: 16px; color: #888; margin-bottom: 40px; }
+    .cta-btn {
+      display: inline-block;
+      padding: 18px 50px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 8px 30px rgba(102,126,234,0.4);
+      transition: all 0.3s;
+    }
+    .cta-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(102,126,234,0.5); }
+
+    /* FOOTER */
+    .footer {
+      background: #1a1a2e;
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+    .footer h3 { font-size: 22px; margin-bottom: 8px; color: #667eea; }
+    .footer p { color: #aaa; font-size: 13px; margin-bottom: 16px; }
+    .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    .footer-links a { color: #aaa; text-decoration: none; font-size: 13px; }
+    .footer-links a:hover { color: #667eea; }
+
+    /* ANIMATIONS */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .floating { animation: float 3s ease-in-out infinite; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 36px; }
+      .stats-bar { gap: 30px; }
+      .navbar { padding: 12px 20px; }
+      .section { padding: 50px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="logo">Scholar<span>AI</span> 🎓</div>
+  <div class="nav-links">
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#how" class="nav-link">How it works</a>
+    <a href="#scholarships" class="nav-link">Scholarships</a>
+    <a href="/login" class="nav-btn">Login / Sign Up</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">🏆 AI-Powered Scholarship Platform for Women</div>
+    <h1>Find Your Perfect<br><span>Scholarship</span> with AI</h1>
+    <p>
+      India's smartest scholarship finder — matches you with<br>
+      National + Odisha State scholarships based on your profile!
+    </p>
+    <div class="hero-btns">
+      <a href="/login" class="btn-primary">🚀 Get Started Free</a>
+      <a href="#how" class="btn-secondary">▶ See How It Works</a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <h3>25+</h3>
+    <p>Scholarships Listed</p>
+  </div>
+  <div class="stat-item">
+    <h3>100%</h3>
+    <p>Free to Use</p>
+  </div>
+  <div class="stat-item">
+    <h3>3</h3>
+    <p>Languages Supported</p>
+  </div>
+  <div class="stat-item">
+    <h3>AI</h3>
+    <p>Powered Matching</p>
+  </div>
+  <div class="stat-item">
+    <h3>2</h3>
+    <p>State + National</p>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <h2 class="section-title">Why Choose ScholarAI? 🌟</h2>
+  <p class="section-sub">Everything you need to find and apply for scholarships</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>Real AI Chatbot</h3>
+      <p>Ask anything about scholarships and get instant intelligent answers powered by Llama AI.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>AI Matching Engine</h3>
+      <p>Our AI matches scholarships to your education, income, category, state and course automatically.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📍</div>
+      <h3>Odisha + National</h3>
+      <p>Find both Odisha State scholarships and National Government scholarships in one place.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌍</div>
+      <h3>3 Languages</h3>
+      <p>Use the platform in English, Hindi (हिंदी), or Odia (ଓଡ଼ିଆ) — your choice!</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📄</div>
+      <h3>Document Manager</h3>
+      <p>Upload and manage all your scholarship documents — Aadhaar, Marksheet, Income Certificate.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔖</div>
+      <h3>Save Scholarships</h3>
+      <p>Bookmark your favourite scholarships and access them anytime from your saved list.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Admin Dashboard</h3>
+      <p>Full admin panel to manage users, view profiles, and track scholarship statistics.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Secure Login</h3>
+      <p>Your data is safe with encrypted passwords and secure user authentication system.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <h2 class="section-title">How It Works 🚀</h2>
+  <p class="section-sub">Get matched with scholarships in just 4 simple steps</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Sign Up Free</h3>
+      <p>Create your account in seconds</p>
+    </div>
+    <div class="step-arrow">→</div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Fill Profile</h3>
+      <p>Add your education, income, category</p>
+    </div>
+    <div class="step-arrow">→</div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>AI Matches</h3>
+      <p>Our AI finds best scholarships for you</p>
+    </div>
+    <div class="step-arrow">→</div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h3>Apply Now</h3>
+      <p>Click and apply on official website</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCHOLARSHIP PREVIEW -->
+<section class="preview-section" id="scholarships">
+  <h2 class="section-title">Featured Scholarships 🏆</h2>
+  <p class="section-sub">A preview of scholarships available on our platform</p>
+  <div class="preview-grid">
+    <div class="preview-card">
+      <h4>AICTE Pragati Scholarship</h4>
+      <p>🏛️ AICTE — Government of India</p>
+      <p>💰 ₹50,000 per year</p>
+      <p>📅 Deadline: 31 Dec 2026</p>
+      <span class="preview-badge">🏛️ National</span>
+    </div>
+    <div class="preview-card">
+      <h4>INSPIRE Scholarship</h4>
+      <p>🏛️ Dept of Science & Technology</p>
+      <p>💰 ₹80,000 per year</p>
+      <p>📅 Deadline: 15 Sep 2026</p>
+      <span class="preview-badge">🏛️ National</span>
+    </div>
+    <div class="preview-card">
+      <h4>Odisha Medhabruti Scholarship</h4>
+      <p>🏛️ Odisha Higher Education Dept</p>
+      <p>💰 ₹15,000 per year</p>
+      <p>📅 Deadline: 30 Sep 2026</p>
+      <span class="preview-badge" style="background:#fff3e0;color:#e65100;">📍 Odisha State</span>
+    </div>
+    <div class="preview-card">
+      <h4>PM Scholarship Scheme</h4>
+      <p>🏛️ Government of India</p>
+      <p>💰 ₹25,000 per year</p>
+      <p>📅 Deadline: 15 Oct 2026</p>
+      <span class="preview-badge">🏛️ National</span>
+    </div>
+    <div class="preview-card">
+      <h4>Prerana Scholarship (Girls)</h4>
+      <p>🏛️ Odisha Women & Child Dept</p>
+      <p>💰 ₹10,000 per year</p>
+      <p>📅 Deadline: 31 Oct 2026</p>
+      <span class="preview-badge" style="background:#fff3e0;color:#e65100;">📍 Odisha State</span>
+    </div>
+    <div class="preview-card">
+      <h4>National Scholarship Portal</h4>
+      <p>🏛️ Government of India</p>
+      <p>💰 Varies by scheme</p>
+      <p>📅 Deadline: 30 Nov 2026</p>
+      <span class="preview-badge">🏛️ National</span>
+    </div>
+  </div>
+  <div style="text-align:center;">
+    <a href="/login" class="cta-btn">View All 25+ Scholarships →</a>
+  </div>
+</section>
+
+<!-- LANGUAGES -->
+<section class="lang-section">
+  <h2>Available in 3 Languages 🌍</h2>
+  <p>Use ScholarAI in your preferred language for better understanding</p>
+  <div class="lang-badges">
+    <div class="lang-badge">🇬🇧 English</div>
+    <div class="lang-badge">🇮🇳 हिंदी (Hindi)</div>
+    <div class="lang-badge">🏛️ ଓଡ଼ିଆ (Odia)</div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <h2 class="section-title">What Students Say 💬</h2>
+  <p class="section-sub">Real feedback from scholarship winners</p>
+  <div class="testimonial-grid">
+    <div class="testimonial-card">
+      <div class="stars">⭐⭐⭐⭐⭐</div>
+      <p>"ScholarAI helped me find the AICTE Pragati Scholarship in minutes! The AI matching is incredibly accurate. Got ₹50,000 this year!"</p>
+      <div class="testimonial-author">Priya Sharma</div>
+      <div class="testimonial-role">B.Tech Student, Odisha</div>
+    </div>
+    <div class="testimonial-card">
+      <div class="stars">⭐⭐⭐⭐⭐</div>
+      <p>"I never knew about Odisha Medhabruti scholarship before. The platform showed it with 100% match. Applied and got selected!"</p>
+      <div class="testimonial-author">Sunita Patra</div>
+      <div class="testimonial-role">B.Sc Student, Bhubaneswar</div>
+    </div>
+    <div class="testimonial-card">
+      <div class="stars">⭐⭐⭐⭐⭐</div>
+      <p>"The Odia language support is amazing! My mother could understand everything. The AI chatbot answered all our questions perfectly."</p>
+      <div class="testimonial-author">Anita Das</div>
+      <div class="testimonial-role">Diploma Student, Cuttack</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Ready to Find Your Scholarship? 🎯</h2>
+  <p>Join thousands of students who found their perfect scholarship with ScholarAI</p>
+  <a href="/login" class="cta-btn">🚀 Start For Free — No Credit Card Needed</a>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <h3>🎓 ScholarAI</h3>
+  <p>AI-Powered Scholarship Finder for Women — National + Odisha State</p>
+  <div class="footer-links">
+    <a href="/login">Login</a>
+    <a href="/login">Sign Up</a>
+    <a href="#features">Features</a>
+    <a href="#scholarships">Scholarships</a>
+    <a href="/admin">Admin</a>
+  </div>
+  <p style="margin-top:20px;font-size:12px;">
+    © 2026 ScholarAI — Built with ❤️ for students of Odisha
+  </p>
+</footer>
+
+<script>
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // Navbar scroll effect
+  window.addEventListener('scroll', () => {
+    const navbar = document.querySelector('.navbar');
+    if (window.scrollY > 50) {
+      navbar.style.boxShadow = '0 4px 30px rgba(0,0,0,0.15)';
+    } else {
+      navbar.style.boxShadow = '0 2px 20px rgba(0,0,0,0.08)';
+    }
+  });
+</script>
+</body>
+</html>

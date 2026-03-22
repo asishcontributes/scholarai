@@ -1,0 +1,6 @@
+id,scholarship_name,provider,provider_type,gender,category,state,income_limit,education_level,eligibility_text,deadline,link
+1,Post Matric Scholarship for SC Girls,National Scholarship Portal,Government,Female,SC,All,250000,UG/PG,"Female SC students studying post-matric courses",2026-03-31,https://scholarships.gov.in
+2,Post Matric Scholarship for ST Girls,National Scholarship Portal,Government,Female,ST,All,250000,UG/PG,"Female ST students studying post-matric courses",2026-03-31,https://scholarships.gov.in
+3,AICTE Pragati Scholarship for Girls,AICTE,Government,Female,All,All,800000,UG,"Girls pursuing technical education in AICTE institutes",2026-03-10,https://www.aicte-india.org
+4,Kanyashree Prakalpa,Government of West Bengal,Government,Female,All,West Bengal,120000,School,"Financial support for girl students in West Bengal",2026-12-31,https://wbkanyashree.gov.in
+5,Begum Hazrat Mahal Scholarship,Ministry of Minority Affairs,Government,Female,Minority,All,200000,UG/PG,"Minority female students with low family income",2026-04-15,https://scholarships.gov.in

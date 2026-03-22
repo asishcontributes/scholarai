@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ScholarAI - Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
+    .navbar {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 16px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+    .navbar h1 { font-size: 22px; }
+    .navbar-right { display: flex; align-items: center; gap: 16px; }
+    .lang-switcher { display: flex; gap: 6px; }
+    .lang-btn {
+      padding: 5px 12px;
+      border: 2px solid white;
+      border-radius: 20px;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .lang-btn.active { background: white; color: #667eea; }
+    .container { display: flex; min-height: calc(100vh - 60px); }
+    .sidebar {
+      width: 220px;
+      background: white;
+      padding: 24px 16px;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+    }
+    .sidebar a {
+      display: block;
+      padding: 12px 16px;
+      color: #555;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .sidebar a:hover, .sidebar a.active { background: #667eea; color: white; }
+    .main { flex: 1; padding: 28px; }
+    .welcome {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .welcome h2 { font-size: 24px; margin-bottom: 4px; }
+    .welcome p { opacity: 0.9; font-size: 14px; }
+    .stats { display: flex; gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      flex: 1;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .stat-card h3 { font-size: 28px; color: #667eea; }
+    .stat-card p { color: #888; font-size: 13px; margin-top: 4px; }
+    .section-title { font-size: 18px; font-weight: 700; color: #333; margin-bottom: 12px; }
+    .filter-btns { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .filter-btn.active { background: #667eea; color: white; }
+    .filter-btn.inactive { background: #eee; color: #333; }
+    .filter-btn:hover { opacity: 0.85; }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 4px solid #667eea;
+    }
+    .card h3 { font-size: 15px; color: #333; margin-bottom: 6px; }
+    .card p { font-size: 13px; color: #666; margin-bottom: 4px; }
+    .match { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 6px 0; }
+    .match.low { background: #fff3e0; color: #e65100; }
+    .type-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+    .type-national { background: #e3f2fd; color: #1565c0; }
+    .type-state { background: #fff3e0; color: #e65100; }
+    .type-other { background: #f3e5f5; color: #6a1b9a; }
+    .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+    .apply-btn { flex: 1; padding: 8px 14px; background: #667eea; color: white; border-radius: 6px; text-decoration: none; font-size: 13px; border: none; cursor: pointer; text-align: center; }
+    .apply-btn:hover { background: #764ba2; }
+    .save-btn { padding: 8px 14px; background: #ffc107; color: #333; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
+    .save-btn:hover { background: #ffb300; }
+    .profile-banner { background: #fff8e1; border-left: 4px solid #ffc107; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #555; display: none; }
+    .profile-banner a { color: #667eea; font-weight: 600; text-decoration: none; }
+    .chatbot { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .chat-box { height: 260px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #fafafa; }
+    .chat-msg { margin-bottom: 10px; font-size: 14px; }
+    .chat-msg.user { text-align: right; }
+    .chat-msg.user span { background: #667eea; color: white; padding: 8px 14px; border-radius: 18px 18px 4px 18px; display: inline-block; max-width: 80%; }
+    .chat-msg.bot span { background: #f0f0f0; color: #333; padding: 8px 14px; border-radius: 18px 18px 18px 4px; display: inline-block; max-width: 80%; line-height: 1.6; }
+    .chat-msg.bot span a { color: #667eea; font-weight: 600; word-break: break-all; }
+    .chat-input { display: flex; gap: 8px; }
+    .chat-input input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+    .chat-input input:focus { border-color: #667eea; }
+    .chat-input button { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .chat-input button:hover { background: #764ba2; }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <h1>🎓 ScholarAI</h1>
+  <div class="navbar-right">
+    <div class="lang-switcher">
+      <button class="lang-btn active" id="lang-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="lang-hi" onclick="setLang('hi')">हिंदी</button>
+      <button class="lang-btn" id="lang-od" onclick="setLang('od')">ଓଡ଼ିଆ</button>
+    </div>
+    <span>Welcome, <strong id="user-name">Student</strong> 👋</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <a href="/dashboard" class="active" data-key="dashboard">🏠 Dashboard</a>
+    <a href="/profile" data-key="profile">👤 My Profile</a>
+    <a href="/documents" data-key="documents">📄 Documents</a>
+    <a href="/saved" data-key="saved">🔖 Saved</a>
+    <a href="/" onclick="localStorage.clear()" data-key="logout">🚪 Logout</a>
+  </div>
+
+  <div class="main">
+    <div class="welcome">
+      <h2 id="welcome-title">Find Your Perfect Scholarship 🎯</h2>
+      <p id="welcome-sub">AI-powered matching — National + Odisha + All India State scholarships!</p>
+    </div>
+
+    <div class="profile-banner" id="profile-banner">
+      <span id="banner-text">⚠️ Profile incomplete!</span>
+      <a href="/profile" id="banner-link">Complete your profile</a>
+      <span id="banner-text2"> to get better matches!</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <h3 id="total-count">0</h3>
+        <p id="stat1">Scholarships Found</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="avg-match">0%</h3>
+        <p id="stat2">Avg Match Score</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="db-total">700+</h3>
+        <p id="stat3">Total in Database</p>
+      </div>
+    </div>
+
+    <div class="section-title" id="matched-title">🏆 Matched Scholarships</div>
+    <div class="filter-btns">
+      <button class="filter-btn active" id="btn-all" onclick="loadScholarships('all')" data-key="filter-all">🌐 All</button>
+      <button class="filter-btn inactive" id="btn-national" onclick="loadScholarships('national')" data-key="filter-national">🏛️ National Only</button>
+      <button class="filter-btn inactive" id="btn-state" onclick="loadScholarships('state')" data-key="filter-state">📍 Odisha State</button>
+      <button class="filter-btn inactive" id="btn-other" onclick="loadScholarships('other')" data-key="filter-other">🗺️ Other States</button>
+    </div>
+
+    <div class="cards-grid" id="scholarship-cards">
+      <p style="color:#888;padding:20px;">Loading scholarships...</p>
+    </div>
+
+    <div class="section-title" id="chatbot-title">🤖 AI Scholarship Assistant</div>
+    <div class="chatbot">
+      <div class="chat-box" id="chat-box">
+        <div class="chat-msg bot">
+          <span id="chat-welcome">👋 Hello! I can help with 700+ scholarships from all states. Try asking: 'Maharashtra scholarships' or 'AICTE Pragati'!</span>
+        </div>
+      </div>
+      <div class="chat-input">
+        <input type="text" id="chat-input"
+          placeholder="Ask about any scholarship or state..."
+          onkeypress="if(event.key==='Enter') sendChat()">
+        <button onclick="sendChat()" id="send-btn">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const translations = {
+    en: {
+      "dashboard": "🏠 Dashboard", "profile": "👤 My Profile",
+      "documents": "📄 Documents", "saved": "🔖 Saved", "logout": "🚪 Logout",
+      "welcome-title": "Find Your Perfect Scholarship 🎯",
+      "welcome-sub": "AI-powered matching — National + Odisha + All India State scholarships!",
+      "banner-text": "⚠️ Profile incomplete!", "banner-link": "Complete your profile",
+      "banner-text2": " to get better matches!",
+      "stat1": "Scholarships Found", "stat2": "Avg Match Score", "stat3": "Total in Database",
+      "matched-title": "🏆 Matched Scholarships",
+      "filter-all": "🌐 All", "filter-national": "🏛️ National Only",
+      "filter-state": "📍 Odisha State", "filter-other": "🗺️ Other States",
+      "chatbot-title": "🤖 AI Scholarship Assistant",
+      "chat-welcome": "👋 Hello! I can help with 700+ scholarships from all states. Try: 'Maharashtra scholarships' or 'AICTE Pragati'!",
+      "chat-placeholder": "Ask about any scholarship or state...",
+      "send-btn": "Send", "apply-btn": "Apply Now →",
+      "provider": "Provider", "amount": "Amount", "deadline": "Deadline", "match-text": "Match",
+      "national-badge": "🏛️ National", "state-badge": "📍 Odisha State", "other-badge": "🗺️ State",
+      "no-scholarship": "No scholarships found.", "update-profile": "Update profile for better matches!",
+      "days-left": "days left", "only": "Only", "passed": "Deadline passed"
+    },
+    hi: {
+      "dashboard": "🏠 डैशबोर्ड", "profile": "👤 मेरी प्रोफाइल",
+      "documents": "📄 दस्तावेज़", "saved": "🔖 सहेजे गए", "logout": "🚪 लॉग आउट",
+      "welcome-title": "अपनी सही छात्रवृत्ति खोजें 🎯",
+      "welcome-sub": "AI आधारित मिलान — राष्ट्रीय + ओडिशा + सभी राज्य छात्रवृत्ति!",
+      "banner-text": "⚠️ प्रोफाइल अधूरी है!", "banner-link": "अपनी प्रोफाइल पूरी करें",
+      "banner-text2": " बेहतर मिलान के लिए!",
+      "stat1": "छात्रवृत्तियां मिलीं", "stat2": "औसत मिलान स्कोर", "stat3": "डेटाबेस में कुल",
+      "matched-title": "🏆 मिली हुई छात्रवृत्तियां",
+      "filter-all": "🌐 सभी", "filter-national": "🏛️ केवल राष्ट्रीय",
+      "filter-state": "📍 ओडिशा राज्य", "filter-other": "🗺️ अन्य राज्य",
+      "chatbot-title": "🤖 AI छात्रवृत्ति सहायक",
+      "chat-welcome": "👋 नमस्ते! मैं 700+ छात्रवृत्तियों में मदद कर सकता हूं। पूछें: 'महाराष्ट्र छात्रवृत्ति'!",
+      "chat-placeholder": "किसी भी छात्रवृत्ति या राज्य के बारे में पूछें...",
+      "send-btn": "भेजें", "apply-btn": "अभी आवेदन करें →",
+      "provider": "प्रदाता", "amount": "राशि", "deadline": "अंतिम तिथि", "match-text": "मिलान",
+      "national-badge": "🏛️ राष्ट्रीय", "state-badge": "📍 ओडिशा राज्य", "other-badge": "🗺️ राज्य",
+      "no-scholarship": "कोई छात्रवृत्ति नहीं मिली।", "update-profile": "बेहतर मिलान के लिए प्रोफाइल अपडेट करें!",
+      "days-left": "दिन बचे", "only": "केवल", "passed": "समय सीमा समाप्त"
+    },
+    od: {
+      "dashboard": "🏠 ଡ୍ୟାସବୋର୍ଡ", "profile": "👤 ମୋ ପ୍ରୋଫାଇଲ",
+      "documents": "📄 ଦଲିଲ", "saved": "🔖 ସଞ୍ଚିତ", "logout": "🚪 ଲଗଆଉଟ",
+      "welcome-title": "ଆପଣଙ୍କ ସଠିକ ଛାତ୍ରବୃତ୍ତି ଖୋଜନ୍ତୁ 🎯",
+      "welcome-sub": "AI ଆଧାରିତ ମିଳାଣ — ଜାତୀୟ + ଓଡ଼ିଶା + ସମସ୍ତ ରାଜ୍ୟ ଛାତ୍ରବୃତ୍ତି!",
+      "banner-text": "⚠️ ପ୍ରୋଫାଇଲ ଅସମ୍ପୂର୍ଣ୍ଣ!", "banner-link": "ଆପଣଙ୍କ ପ୍ରୋଫାଇଲ ସମ୍ପୂର୍ଣ୍ଣ କରନ୍ତୁ",
+      "banner-text2": " ଭଲ ମିଳାଣ ପାଇଁ!",
+      "stat1": "ଛାତ୍ରବୃତ୍ତି ମିଳିଲା", "stat2": "ହାରାହାରି ମିଳାଣ", "stat3": "ଡାଟାବେସରେ ମୋଟ",
+      "matched-title": "🏆 ମିଳିଥିବା ଛାତ୍ରବୃତ୍ତି",
+      "filter-all": "🌐 ସମସ୍ତ", "filter-national": "🏛️ କେବଳ ଜାତୀୟ",
+      "filter-state": "📍 ଓଡ଼ିଶା ରାଜ୍ୟ", "filter-other": "🗺️ ଅନ୍ୟ ରାଜ୍ୟ",
+      "chatbot-title": "🤖 AI ଛାତ୍ରବୃତ୍ତି ସହାୟକ",
+      "chat-welcome": "👋 ନମସ୍କାର! ମୁଁ 700+ ଛାତ୍ରବୃତ୍ତି ବିଷୟରେ ସାହାଯ୍ୟ କରିପାରିବି!",
+      "chat-placeholder": "ଯେକୌଣସି ଛାତ୍ରବୃତ୍ତି ବା ରାଜ୍ୟ ବିଷୟରେ ପଚାରନ୍ତୁ...",
+      "send-btn": "ପଠାନ୍ତୁ", "apply-btn": "ଏବେ ଆବେଦନ କରନ୍ତୁ →",
+      "provider": "ପ୍ରଦାନକର୍ତ୍ତା", "amount": "ପରିମାଣ", "deadline": "ଶେଷ ତାରିଖ", "match-text": "ମିଳାଣ",
+      "national-badge": "🏛️ ଜାତୀୟ", "state-badge": "📍 ଓଡ଼ିଶା ରାଜ୍ୟ", "other-badge": "🗺️ ରାଜ୍ୟ",
+      "no-scholarship": "କୌଣସି ଛାତ୍ରବୃତ୍ତି ମିଳିଲା ନାହିଁ।", "update-profile": "ଭଲ ମିଳାଣ ପାଇଁ ପ୍ରୋଫାଇଲ ଅପଡେଟ କରନ୍ତୁ!",
+      "days-left": "ଦିନ ବାକି", "only": "କେବଳ", "passed": "ସମୟସୀମା ଶେଷ"
+    }
+  };
+
+  let currentLang = localStorage.getItem("lang") || "en";
+  let currentFilter = "all";
+  const userName = localStorage.getItem("user_name");
+  const userEmail = localStorage.getItem("user_email");
+  if (userName) document.getElementById("user-name").textContent = userName;
+  if (!userEmail) document.getElementById("profile-banner").style.display = "block";
+
+  // Load total count
+  fetch("/get_total_count")
+  .then(r => r.json())
+  .then(data => { document.getElementById("db-total").textContent = data.total + "+"; })
+  .catch(() => {});
+
+  // ==============================
+  // COUNTDOWN HELPER
+  // ==============================
+  function getCountdown(deadlineStr, t) {
+    try {
+      const months = {"Jan":0,"Feb":1,"Mar":2,"Apr":3,"May":4,"Jun":5,"Jul":6,"Aug":7,"Sep":8,"Oct":9,"Nov":10,"Dec":11};
+      let day, month, year;
+      if (deadlineStr.includes("-")) {
+        const parts = deadlineStr.split("-");
+        day = parseInt(parts[0]); month = parseInt(parts[1]) - 1; year = parseInt(parts[2]);
+      } else {
+        const parts = deadlineStr.split(" ");
+        day = parseInt(parts[0]); month = months[parts[1]] !== undefined ? months[parts[1]] : 0; year = parseInt(parts[2]);
+      }
+      const deadlineDate = new Date(year, month, day);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const daysLeft = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+      if (daysLeft > 60) return `<span style="background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;margin:4px 0;">⏰ ${daysLeft} ${t["days-left"]}</span>`;
+      else if (daysLeft > 30) return `<span style="background:#fff3e0;color:#f57c00;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;margin:4px 0;">⚠️ ${daysLeft} ${t["days-left"]}</span>`;
+      else if (daysLeft > 0) return `<span style="background:#ffebee;color:#c62828;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;margin:4px 0;">🔥 ${t["only"]} ${daysLeft} ${t["days-left"]}!</span>`;
+      else return `<span style="background:#f5f5f5;color:#999;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;margin:4px 0;">❌ ${t["passed"]}</span>`;
+    } catch(e) { return ""; }
+  }
+
+  // ==============================
+  // SET LANGUAGE
+  // ==============================
+  function setLang(lang) {
+    currentLang = lang;
+    localStorage.setItem("lang", lang);
+    ["en","hi","od"].forEach(l => {
+      document.getElementById("lang-"+l).className = l===lang ? "lang-btn active" : "lang-btn";
+    });
+    const t = translations[lang];
+    document.getElementById("welcome-title").textContent = t["welcome-title"];
+    document.getElementById("welcome-sub").textContent = t["welcome-sub"];
+    document.getElementById("banner-text").textContent = t["banner-text"];
+    document.getElementById("banner-link").textContent = t["banner-link"];
+    document.getElementById("banner-text2").textContent = t["banner-text2"];
+    document.getElementById("stat1").textContent = t["stat1"];
+    document.getElementById("stat2").textContent = t["stat2"];
+    document.getElementById("stat3").textContent = t["stat3"];
+    document.getElementById("matched-title").textContent = t["matched-title"];
+    document.getElementById("btn-all").textContent = t["filter-all"];
+    document.getElementById("btn-national").textContent = t["filter-national"];
+    document.getElementById("btn-state").textContent = t["filter-state"];
+    document.getElementById("btn-other").textContent = t["filter-other"];
+    document.getElementById("chatbot-title").textContent = t["chatbot-title"];
+    document.getElementById("chat-welcome").textContent = t["chat-welcome"];
+    document.getElementById("chat-input").placeholder = t["chat-placeholder"];
+    document.getElementById("send-btn").textContent = t["send-btn"];
+    document.querySelectorAll(".sidebar a").forEach(a => {
+      const key = a.getAttribute("data-key");
+      if (key && t[key]) a.textContent = t[key];
+    });
+    loadScholarships(currentFilter);
+  }
+
+  // ==============================
+  // LOAD SCHOLARSHIPS
+  // ==============================
+  function loadScholarships(filter) {
+    currentFilter = filter;
+    const t = translations[currentLang];
+    ["all","national","state","other"].forEach(f => {
+      const btn = document.getElementById("btn-"+f);
+      if (btn) btn.className = f===filter ? "filter-btn active" : "filter-btn inactive";
+    });
+    const container = document.getElementById("scholarship-cards");
+    container.innerHTML = "<p style='color:#888;padding:20px;'>Loading...</p>";
+    fetch("/get_scholarships", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({email: userEmail, filter: filter})
+    })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("total-count").textContent = data.length;
+      if (data.length > 0) {
+        const avg = Math.round(data.reduce((sum,s) => sum + parseInt(s.match), 0) / data.length);
+        document.getElementById("avg-match").textContent = avg + "%";
+      }
+      container.innerHTML = "";
+      if (data.length === 0) {
+        container.innerHTML = `
+          <div style="padding:20px;color:#888;text-align:center;grid-column:1/-1;">
+            <p style="font-size:16px;">${t["no-scholarship"]}</p>
+            <a href="/profile" style="color:#667eea;font-weight:600;text-decoration:none;">
+              ${t["update-profile"]}
+            </a>
+          </div>`;
+        return;
+      }
+      data.forEach(s => {
+        const matchNum = parseInt(s.match);
+        const matchClass = matchNum >= 70 ? "match" : "match low";
+        const sType = s.type || "National";
+        let typeBadge = "";
+        if (sType === "National") {
+          typeBadge = `<span class="type-badge type-national">${t["national-badge"]}</span>`;
+        } else if (sType === "Odisha State") {
+          typeBadge = `<span class="type-badge type-state">${t["state-badge"]}</span>`;
+        } else {
+          typeBadge = `<span class="type-badge type-other">🗺️ ${sType}</span>`;
+        }
+        const countdownHtml = getCountdown(s.deadline, t);
+        const districtHtml = s.district && s.district !== "All" && s.district !== ""
+          ? `<p>📍 District: ${s.district}</p>` : "";
+        container.innerHTML += `
+          <div class="card">
+            <h3>${s.name}</h3>
+            ${typeBadge}
+            <p>🏛️ ${t["provider"]}: ${s.provider}</p>
+            <p>💰 ${t["amount"]}: ${s.amount}</p>
+            <p>📅 ${t["deadline"]}: ${s.deadline}</p>
+            ${districtHtml}
+            ${countdownHtml}
+            <span class="${matchClass}">✅ ${t["match-text"]}: ${s.match}</span><br>
+            <div class="btn-row">
+              <a class="apply-btn"
+                href="https://www.google.com/search?q=${encodeURIComponent(s.name+' official apply 2026')}"
+                target="_blank">
+                ${t["apply-btn"]}
+              </a>
+              <button class="save-btn"
+                id="save-${s.name.replace(/[^a-zA-Z0-9]/g,'_')}"
+                onclick="saveScholarship('${s.name.replace(/'/g,"\\'")}')">
+                🔖
+              </button>
+            </div>
+          </div>`;
+      });
+    })
+    .catch(() => {
+      container.innerHTML = "<p style='color:red;padding:20px;'>Could not load. Make sure server is running.</p>";
+    });
+  }
+
+  // ==============================
+  // SAVE SCHOLARSHIP
+  // ==============================
+  function saveScholarship(name) {
+    const key = name.replace(/[^a-zA-Z0-9]/g,'_');
+    const btn = document.getElementById("save-" + key);
+    fetch("/save_scholarship", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({email: userEmail, name: name})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === "saved") {
+        if (btn) { btn.style.background = "#4caf50"; btn.style.color = "white"; btn.textContent = "✅"; }
+        setTimeout(() => { if (btn) { btn.style.background = "#ffc107"; btn.style.color = "#333"; btn.textContent = "🔖"; } }, 2000);
+      } else if (data.status === "exists") {
+        if (btn) btn.textContent = "✅";
+        setTimeout(() => { if (btn) btn.textContent = "🔖"; }, 2000);
+      }
+    });
+  }
+
+  // Load on start
+  setLang(currentLang);
+
+  // ==============================
+  // CHATBOT WITH CLICKABLE LINKS
+  // ==============================
+function sendChat() {
+    const input = document.getElementById("chat-input");
+    const box = document.getElementById("chat-box");
+    const msg = input.value.trim();
+    if (!msg) return;
+    box.innerHTML += `<div class="chat-msg user"><span>${msg}</span></div>`;
+    input.value = "";
+    box.scrollTop = box.scrollHeight;
+    fetch("/chat", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({message: msg, lang: currentLang})
+    })
+    .then(r => r.json())
+    .then(data => {
+      let reply = data.reply;
+
+      // Step 1 - Remove markdown bold **text**
+      reply = reply.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+      // Step 2 - Remove markdown [text](url) format
+      reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '$2');
+
+      // Step 3 - Make plain URLs clickable
+      reply = reply.replace(/(https?:\/\/[^\s<>"']+)/g, function(url) {
+        url = url.replace(/[.,;:!?)]+$/, '');
+        return '<a href="' + url + '" target="_blank" style="color:#667eea;font-weight:700;text-decoration:underline;">' + url + '</a>';
+      });
+
+      // Step 4 - Convert newlines to line breaks
+      reply = reply.replace(/\n/g, '<br>');
+
+      box.innerHTML += `<div class="chat-msg bot"><span>🤖 ${reply}</span></div>`;
+      box.scrollTop = box.scrollHeight;
+    });
+  }
+</script>
+</body>
+</html>

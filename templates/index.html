@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ScholarAI - Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h2 { text-align: center; color: #667eea; margin-bottom: 8px; }
+    p.subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+    .tab {
+      flex: 1; padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+    .tab.active { background: #667eea; color: white; }
+    input {
+      width: 100%; padding: 12px;
+      margin-bottom: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus { border-color: #667eea; }
+    button {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white; border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    .msg { text-align: center; margin-top: 12px; font-size: 14px; }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>🎓 ScholarAI</h2>
+  <p class="subtitle">AI-Powered Scholarship Finder for Women</p>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('login')">Login</div>
+    <div class="tab" onclick="showTab('signup')">Sign Up</div>
+  </div>
+
+  <!-- LOGIN FORM -->
+  <div id="login-form">
+    <input type="email" id="login-email" placeholder="Email Address">
+    <input type="password" id="login-password" placeholder="Password">
+    <button onclick="doLogin()">Login</button>
+    <p class="msg" id="login-msg"></p>
+  </div>
+
+  <!-- SIGNUP FORM -->
+  <div id="signup-form" style="display:none;">
+    <input type="text" id="signup-name" placeholder="Full Name">
+    <input type="email" id="signup-email" placeholder="Email Address">
+    <input type="password" id="signup-password" placeholder="Password">
+    <button onclick="doSignup()">Create Account</button>
+    <p class="msg" id="signup-msg"></p>
+  </div>
+</div>
+
+<script>
+  function showTab(tab) {
+    document.getElementById("login-form").style.display = tab === "login" ? "block" : "none";
+    document.getElementById("signup-form").style.display = tab === "signup" ? "block" : "none";
+    document.querySelectorAll(".tab").forEach((t, i) => {
+      t.classList.toggle("active",
+        (tab === "login" && i === 0) || (tab === "signup" && i === 1));
+    });
+  }
+
+  function doLogin() {
+    const email = document.getElementById("login-email").value;
+    const password = document.getElementById("login-password").value;
+    const msg = document.getElementById("login-msg");
+
+    if (!email || !password) {
+      msg.className = "msg error";
+      msg.textContent = "Please enter email and password!";
+      return;
+    }
+
+    fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.message) {
+        msg.className = "msg success";
+        msg.textContent = "Login successful! Redirecting...";
+        // SAVE BOTH NAME AND EMAIL
+        localStorage.setItem("user_name", data.name);
+        localStorage.setItem("user_email", data.email);
+        setTimeout(() => window.location.href = "/dashboard", 1000);
+      } else {
+        msg.className = "msg error";
+        msg.textContent = "❌ " + data.error;
+      }
+    })
+    .catch(() => {
+      msg.className = "msg error";
+      msg.textContent = "❌ Server error. Make sure Flask is running!";
+    });
+  }
+
+  function doSignup() {
+    const name = document.getElementById("signup-name").value;
+    const email = document.getElementById("signup-email").value;
+    const password = document.getElementById("signup-password").value;
+    const msg = document.getElementById("signup-msg");
+
+    if (!name || !email || !password) {
+      msg.className = "msg error";
+      msg.textContent = "Please fill all fields!";
+      return;
+    }
+
+    fetch("/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.message) {
+        msg.className = "msg success";
+        msg.textContent = "Account created! Please login now.";
+        setTimeout(() => showTab('login'), 1500);
+      } else {
+        msg.className = "msg error";
+        msg.textContent = "❌ " + data.error;
+      }
+    })
+    .catch(() => {
+      msg.className = "msg error";
+      msg.textContent = "❌ Server error. Make sure Flask is running!";
+    });
+  }
+</script>
+</body>
+</html>
