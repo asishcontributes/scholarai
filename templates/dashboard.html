@@ -119,6 +119,59 @@
     .chat-input input:focus { border-color: #667eea; }
     .chat-input button { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
     .chat-input button:hover { background: #764ba2; }
+
+    /* Quick Actions toolbar */
+    .quick-actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    }
+    .action-btn:hover { opacity: 0.88; transform: translateY(-2px); }
+    .btn-pdf {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      color: white;
+    }
+    .btn-map {
+      background: linear-gradient(135deg, #11998e, #38ef7d);
+      color: white;
+    }
+
+    /* PDF loading spinner */
+    .pdf-loading {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
   </style>
 </head>
 <body>
@@ -141,6 +194,7 @@
     <a href="/profile" data-key="profile">👤 My Profile</a>
     <a href="/documents" data-key="documents">📄 Documents</a>
     <a href="/saved" data-key="saved">🔖 Saved</a>
+    <a href="/map" data-key="map">🗺️ State Map</a>
     <a href="/" onclick="localStorage.clear()" data-key="logout">🚪 Logout</a>
   </div>
 
@@ -169,6 +223,21 @@
         <h3 id="db-total">700+</h3>
         <p id="stat3">Total in Database</p>
       </div>
+    </div>
+
+    <!-- Quick Action Buttons -->
+    <div class="quick-actions">
+      <!-- PDF button — calls downloadPDF() which passes email as query param -->
+      <button class="action-btn btn-pdf" id="pdf-btn" onclick="downloadPDF()">
+        📄 Download Scholarships PDF
+      </button>
+      <!-- Loading state (hidden by default) -->
+      <div class="pdf-loading" id="pdf-loading">
+        <div class="spinner"></div> Generating PDF...
+      </div>
+      <a class="action-btn btn-map" href="/map">
+        🗺️ State-wise Scholarship Map
+      </a>
     </div>
 
     <div class="section-title" id="matched-title">🏆 Matched Scholarships</div>
@@ -204,7 +273,8 @@
   const translations = {
     en: {
       "dashboard": "🏠 Dashboard", "profile": "👤 My Profile",
-      "documents": "📄 Documents", "saved": "🔖 Saved", "logout": "🚪 Logout",
+      "documents": "📄 Documents", "saved": "🔖 Saved",
+      "map": "🗺️ State Map", "logout": "🚪 Logout",
       "welcome-title": "Find Your Perfect Scholarship 🎯",
       "welcome-sub": "AI-powered matching — National + Odisha + All India State scholarships!",
       "banner-text": "⚠️ Profile incomplete!", "banner-link": "Complete your profile",
@@ -224,7 +294,8 @@
     },
     hi: {
       "dashboard": "🏠 डैशबोर्ड", "profile": "👤 मेरी प्रोफाइल",
-      "documents": "📄 दस्तावेज़", "saved": "🔖 सहेजे गए", "logout": "🚪 लॉग आउट",
+      "documents": "📄 दस्तावेज़", "saved": "🔖 सहेजे गए",
+      "map": "🗺️ राज्य मानचित्र", "logout": "🚪 लॉग आउट",
       "welcome-title": "अपनी सही छात्रवृत्ति खोजें 🎯",
       "welcome-sub": "AI आधारित मिलान — राष्ट्रीय + ओडिशा + सभी राज्य छात्रवृत्ति!",
       "banner-text": "⚠️ प्रोफाइल अधूरी है!", "banner-link": "अपनी प्रोफाइल पूरी करें",
@@ -244,7 +315,8 @@
     },
     od: {
       "dashboard": "🏠 ଡ୍ୟାସବୋର୍ଡ", "profile": "👤 ମୋ ପ୍ରୋଫାଇଲ",
-      "documents": "📄 ଦଲିଲ", "saved": "🔖 ସଞ୍ଚିତ", "logout": "🚪 ଲଗଆଉଟ",
+      "documents": "📄 ଦଲିଲ", "saved": "🔖 ସଞ୍ଚିତ",
+      "map": "🗺️ ରାଜ୍ୟ ମାନଚିତ୍ର", "logout": "🚪 ଲଗଆଉଟ",
       "welcome-title": "ଆପଣଙ୍କ ସଠିକ ଛାତ୍ରବୃତ୍ତି ଖୋଜନ୍ତୁ 🎯",
       "welcome-sub": "AI ଆଧାରିତ ମିଳାଣ — ଜାତୀୟ + ଓଡ଼ିଶା + ସମସ୍ତ ରାଜ୍ୟ ଛାତ୍ରବୃତ୍ତି!",
       "banner-text": "⚠️ ପ୍ରୋଫାଇଲ ଅସମ୍ପୂର୍ଣ୍ଣ!", "banner-link": "ଆପଣଙ୍କ ପ୍ରୋଫାଇଲ ସମ୍ପୂର୍ଣ୍ଣ କରନ୍ତୁ",
@@ -276,6 +348,29 @@
   .then(r => r.json())
   .then(data => { document.getElementById("db-total").textContent = data.total + "+"; })
   .catch(() => {});
+
+  // ==============================
+  // PDF DOWNLOAD — FIXED ✅
+  // Uses window.location.href with email as query param (GET request)
+  // ==============================
+  function downloadPDF() {
+    const email = localStorage.getItem("user_email") || "";
+    const pdfBtn = document.getElementById("pdf-btn");
+    const pdfLoading = document.getElementById("pdf-loading");
+
+    // Show loading state
+    pdfBtn.style.display = "none";
+    pdfLoading.style.display = "inline-flex";
+
+    // Redirect to PDF route with email as query param
+    window.location.href = "/download_scholarships_pdf?email=" + encodeURIComponent(email);
+
+    // Restore button after 3 seconds
+    setTimeout(() => {
+      pdfBtn.style.display = "inline-flex";
+      pdfLoading.style.display = "none";
+    }, 3000);
+  }
 
   // ==============================
   // COUNTDOWN HELPER
@@ -444,7 +539,7 @@
   // ==============================
   // CHATBOT WITH CLICKABLE LINKS
   // ==============================
-function sendChat() {
+  function sendChat() {
     const input = document.getElementById("chat-input");
     const box = document.getElementById("chat-box");
     const msg = input.value.trim();
@@ -460,22 +555,13 @@ function sendChat() {
     .then(r => r.json())
     .then(data => {
       let reply = data.reply;
-
-      // Step 1 - Remove markdown bold **text**
       reply = reply.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-      // Step 2 - Remove markdown [text](url) format
       reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '$2');
-
-      // Step 3 - Make plain URLs clickable
       reply = reply.replace(/(https?:\/\/[^\s<>"']+)/g, function(url) {
         url = url.replace(/[.,;:!?)]+$/, '');
         return '<a href="' + url + '" target="_blank" style="color:#667eea;font-weight:700;text-decoration:underline;">' + url + '</a>';
       });
-
-      // Step 4 - Convert newlines to line breaks
       reply = reply.replace(/\n/g, '<br>');
-
       box.innerHTML += `<div class="chat-msg bot"><span>🤖 ${reply}</span></div>`;
       box.scrollTop = box.scrollHeight;
     });

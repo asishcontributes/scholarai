@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import sqlite3
@@ -6,6 +6,7 @@ import os
 import csv
 import requests as req
 import re
+from io import BytesIO
 
 # ==============================
 # GEMINI AI SETUP
@@ -15,7 +16,7 @@ gemini_model = None
 
 try:
     import google.generativeai as genai
-    GEMINI_API_KEY = "AIzaSyDT8NZNw9aI9vzrIJxkSEOu_MyA7Z1EWTw"  # ← PASTE YOUR GEMINI KEY HERE
+    GEMINI_API_KEY = "AIzaSyDT8NZNw9aI9vzrIJxkSEOu_MyA7Z1EWTw"
     genai.configure(api_key=GEMINI_API_KEY)
     gemini_model = genai.GenerativeModel("gemini-2.5-flash")
     GEMINI_AVAILABLE = True
@@ -109,6 +110,10 @@ def admin_login_page():
 @routes.route("/admin_dashboard")
 def admin_dashboard():
     return render_template("admin_dashboard.html")
+
+@routes.route("/map")
+def map_page():
+    return render_template("map.html")
 
 # ==============================
 # SIGNUP
@@ -290,8 +295,7 @@ def save_scholarship():
             return jsonify({"message": "Already saved!", "status": "exists"})
         saved_list.append(scholarship_name)
         new_saved = "||".join(saved_list)
-        cur.execute("UPDATE users SET saved_scholarships=? WHERE email=?",
-                    (new_saved, email))
+        cur.execute("UPDATE users SET saved_scholarships=? WHERE email=?", (new_saved, email))
         conn.commit()
         conn.close()
         return jsonify({"message": "Scholarship saved!", "status": "saved"})
@@ -316,8 +320,7 @@ def unsave_scholarship():
         if scholarship_name in saved_list:
             saved_list.remove(scholarship_name)
         new_saved = "||".join(saved_list)
-        cur.execute("UPDATE users SET saved_scholarships=? WHERE email=?",
-                    (new_saved, email))
+        cur.execute("UPDATE users SET saved_scholarships=? WHERE email=?", (new_saved, email))
         conn.commit()
         conn.close()
         return jsonify({"message": "Removed from saved!", "status": "removed"})
@@ -473,12 +476,31 @@ HARDCODED_SCHOLARSHIPS = [
     {"name": "Odisha Medhabruti Scholarship", "provider": "Odisha Higher Education Dept", "amount": "15,000 per year", "deadline": "30 Sep 2026", "link": "https://dheodisha.gov.in/", "type": "Odisha State", "education": "undergraduate", "max_income": 600000, "category": "all", "state": "odisha", "course": "science"},
     {"name": "Gopabandhu Scholarship (Odisha)", "provider": "Odisha Govt", "amount": "12,000 per year", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in/", "type": "Odisha State", "education": "undergraduate", "max_income": 300000, "category": "all", "state": "odisha", "course": "all"},
     {"name": "Odisha Police Welfare Scholarship", "provider": "Odisha Police Dept", "amount": "10,000 per year", "deadline": "30 Nov 2026", "link": "https://www.odishapolice.gov.in/", "type": "Odisha State", "education": "undergraduate", "max_income": 400000, "category": "all", "state": "odisha", "course": "all"},
-    {"name": "Prerana Scholarship (Odisha Girls)", "provider": "Odisha Women & Child Dept", "amount": "10,000 per year", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in/", "type": "Odisha State", "education": "12th", "max_income": 300000, "category": "all", "state": "odisha", "course": "all"}
+    {"name": "Prerana Scholarship (Odisha Girls)", "provider": "Odisha Women & Child Dept", "amount": "10,000 per year", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in/", "type": "Odisha State", "education": "12th", "max_income": 300000, "category": "all", "state": "odisha", "course": "all"},
+    # Maharashtra
+    {"name": "MahaDBT Scholarship", "provider": "Maharashtra Govt", "amount": "Varies", "deadline": "31 Dec 2026", "link": "https://mahadbt.maharashtra.gov.in", "type": "Maharashtra State", "education": "undergraduate", "max_income": 800000, "category": "all", "state": "maharashtra", "course": "all"},
+    {"name": "Maharashtra EBC Scholarship", "provider": "Maharashtra Govt", "amount": "15,000 per year", "deadline": "31 Dec 2026", "link": "https://mahadbt.maharashtra.gov.in", "type": "Maharashtra State", "education": "undergraduate", "max_income": 100000, "category": "ebc", "state": "maharashtra", "course": "all"},
+    {"name": "Maharashtra OBC Scholarship", "provider": "Maharashtra Govt", "amount": "12,000 per year", "deadline": "31 Dec 2026", "link": "https://mahadbt.maharashtra.gov.in", "type": "Maharashtra State", "education": "undergraduate", "max_income": 100000, "category": "obc", "state": "maharashtra", "course": "all"},
+    # Karnataka
+    {"name": "Karnataka Sanchi Scholarship", "provider": "Karnataka Govt", "amount": "10,000 per year", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in", "type": "Karnataka State", "education": "undergraduate", "max_income": 600000, "category": "all", "state": "karnataka", "course": "all"},
+    {"name": "Karnataka SC/ST Scholarship", "provider": "Karnataka SC/ST Dept", "amount": "15,000 per year", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in", "type": "Karnataka State", "education": "undergraduate", "max_income": 250000, "category": "sc", "state": "karnataka", "course": "all"},
+    # Tamil Nadu
+    {"name": "Tamil Nadu Chief Minister Scholarship", "provider": "Tamil Nadu Govt", "amount": "12,000 per year", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in", "type": "Tamil Nadu State", "education": "undergraduate", "max_income": 200000, "category": "all", "state": "tamil nadu", "course": "all"},
+    {"name": "Tamil Nadu BC/MBC Scholarship", "provider": "Tamil Nadu Govt", "amount": "10,000 per year", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in", "type": "Tamil Nadu State", "education": "undergraduate", "max_income": 100000, "category": "obc", "state": "tamil nadu", "course": "all"},
+    # Uttar Pradesh
+    {"name": "UP Post Matric Scholarship", "provider": "Uttar Pradesh Govt", "amount": "15,000 per year", "deadline": "30 Nov 2026", "link": "https://scholarship.up.gov.in", "type": "Uttar Pradesh State", "education": "12th", "max_income": 200000, "category": "all", "state": "uttar pradesh", "course": "all"},
+    {"name": "Samajwadi Scholarship UP", "provider": "Uttar Pradesh Govt", "amount": "20,000 per year", "deadline": "30 Nov 2026", "link": "https://scholarship.up.gov.in", "type": "Uttar Pradesh State", "education": "undergraduate", "max_income": 300000, "category": "all", "state": "uttar pradesh", "course": "all"},
+    # West Bengal
+    {"name": "Aikyashree Scholarship WB", "provider": "West Bengal Govt", "amount": "10,000 per year", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in", "type": "West Bengal State", "education": "undergraduate", "max_income": 200000, "category": "minority", "state": "west bengal", "course": "all"},
+    {"name": "Kanyashree Prakalpa WB", "provider": "West Bengal Govt", "amount": "25,000 per year", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in", "type": "West Bengal State", "education": "12th", "max_income": 120000, "category": "all", "state": "west bengal", "course": "all"},
+    # Telangana
+    {"name": "TS ePass Scholarship", "provider": "Telangana Govt", "amount": "Varies", "deadline": "31 Oct 2026", "link": "https://telanganaepass.cgg.gov.in", "type": "Telangana State", "education": "undergraduate", "max_income": 200000, "category": "sc", "state": "telangana", "course": "all"},
+    # Andhra Pradesh
+    {"name": "AP Jagananna Vidya Deevena", "provider": "Andhra Pradesh Govt", "amount": "Full fee reimbursement", "deadline": "31 Oct 2026", "link": "https://scholarships.gov.in", "type": "Andhra Pradesh State", "education": "undergraduate", "max_income": 250000, "category": "all", "state": "andhra pradesh", "course": "all"},
+    # Jharkhand
+    {"name": "Jharkhand E-Kalyan Scholarship", "provider": "Jharkhand Govt", "amount": "19,000 per year", "deadline": "30 Nov 2026", "link": "https://ekalyan.cgg.gov.in", "type": "Jharkhand State", "education": "undergraduate", "max_income": 250000, "category": "sc", "state": "jharkhand", "course": "all"},
 ]
 
-# ==============================
-# COMBINE ALL SCHOLARSHIPS
-# ==============================
 def get_all_scholarships_combined():
     csv_data = load_csv_scholarships()
     combined = HARDCODED_SCHOLARSHIPS.copy()
@@ -547,13 +569,50 @@ def get_scholarships():
     result.sort(key=lambda x: int(x["match"].replace("%", "")), reverse=True)
     return jsonify(result[:50])
 
-# ==============================
-# GET TOTAL COUNT
-# ==============================
 @routes.route("/get_total_count", methods=["GET"])
 def get_total_count():
     all_s = get_all_scholarships_combined()
     return jsonify({"total": len(all_s)})
+
+# ==============================
+# GET STATE SCHOLARSHIPS (for Map)
+# ==============================
+@routes.route("/get_state_scholarships", methods=["POST"])
+def get_state_scholarships():
+    try:
+        data = request.get_json()
+        state_name = data.get("state", "").strip().lower()
+
+        all_scholarships = get_all_scholarships_combined()
+        result = []
+
+        for s in all_scholarships:
+            s_state = s.get("state", "all").lower()
+            s_type  = s.get("type",  "").lower()
+            s_name  = s.get("name",  "").lower()
+
+            # Match if: scholarship is for this state, OR national (all states), OR type contains state name
+            is_national   = s_state == "all" or s.get("type") == "National"
+            is_this_state = s_state == state_name or state_name in s_type or state_name in s_name
+
+            if is_national or is_this_state:
+                result.append({
+                    "name":     s["name"],
+                    "provider": s.get("provider", "Government"),
+                    "amount":   s.get("amount", "As per scheme"),
+                    "deadline": s.get("deadline", "N/A"),
+                    "type":     s.get("type", "National"),
+                    "match":    "80%" if is_this_state else "60%",
+                    "link":     s.get("link", "https://scholarships.gov.in")
+                })
+
+        # State-specific ones first, then national
+        result.sort(key=lambda x: (0 if x["match"] == "80%" else 1, x["name"]))
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ==============================
 # ADMIN
@@ -622,7 +681,7 @@ def delete_user():
     return jsonify({"message": "User deleted successfully"})
 
 # ==============================
-# KEYWORD FALLBACK (backup only)
+# KEYWORD FALLBACK
 # ==============================
 def generate_reply(msg, lang="en"):
     msg_lower = msg.lower()
@@ -638,35 +697,23 @@ def generate_reply(msg, lang="en"):
         replies = {"en": "Required documents: Aadhaar Card, Income Certificate, Caste Certificate, Marksheet, Bank Passbook, Domicile Certificate.", "hi": "आवश्यक: आधार, आय प्रमाण, जाति प्रमाण, मार्कशीट, बैंक पासबुक।", "od": "ଆବଶ୍ୟକ: ଆଧାର, ଆୟ ପ୍ରମାଣ, ଜାତି ପ୍ରମାଣ, ମାର୍କଶିଟ।"}
     elif "deadline" in msg_lower or "last date" in msg_lower:
         replies = {"en": "Key deadlines: AICTE Dec 2026, PM Oct 2026, INSPIRE Sep 2026, NSP Nov 2026.", "hi": "तिथियां: AICTE दिसंबर, PM अक्टूबर, INSPIRE सितंबर 2026।", "od": "ଶେଷ ତାରିଖ: AICTE ଡିସେମ୍ବର, PM ଅକ୍ଟୋବର 2026।"}
-    elif "sc" in msg_lower or "scheduled caste" in msg_lower:
-        replies = {"en": "SC Post Matric Scholarship Rs.15,000/yr. Apply: https://scholarships.gov.in/", "hi": "SC छात्रवृत्ति Rs.15,000। आवेदन: https://scholarships.gov.in/", "od": "SC Rs.15,000। ଆବେଦନ: https://scholarships.gov.in/"}
-    elif "st" in msg_lower or "scheduled tribe" in msg_lower:
-        replies = {"en": "ST Post Matric Scholarship Rs.15,000/yr. Apply: https://scholarships.gov.in/", "hi": "ST छात्रवृत्ति Rs.15,000। आवेदन: https://scholarships.gov.in/", "od": "ST Rs.15,000। ଆବେଦନ: https://scholarships.gov.in/"}
-    elif "obc" in msg_lower:
-        replies = {"en": "OBC Post Matric Scholarship Rs.12,000/yr. Apply: https://scholarships.gov.in/", "hi": "OBC Rs.12,000। आवेदन: https://scholarships.gov.in/", "od": "OBC Rs.12,000। ଆବେଦନ: https://scholarships.gov.in/"}
-    elif "thank" in msg_lower:
-        replies = {"en": "You're welcome! Best of luck! 🎓", "hi": "आपका स्वागत है! शुभकामनाएं! 🎓", "od": "ଆପଣଙ୍କୁ ସ୍ୱାଗତ! ଶୁଭକାମନା! 🎓"}
     else:
-        replies = {"en": "I can help with scholarships! Ask about: 'Odisha scholarships', 'AICTE Pragati', 'SC/ST scholarships', 'documents needed'. Apply: https://scholarships.gov.in/", "hi": "पूछें: 'ओडिशा छात्रवृत्ति', 'AICTE प्रगति'। आवेदन: https://scholarships.gov.in/", "od": "ପଚାରନ୍ତୁ: 'Odisha ଛାତ୍ରବୃତ୍ତି'। ଆବେଦନ: https://scholarships.gov.in/"}
+        replies = {"en": "Ask me: 'Odisha scholarships', 'AICTE Pragati', 'SC/ST scholarships'. Apply: https://scholarships.gov.in/", "hi": "पूछें: 'ओडिशा छात्रवृत्ति', 'AICTE प्रगति'। आवेदन: https://scholarships.gov.in/", "od": "ପଚାରନ୍ତୁ: 'Odisha ଛାତ୍ରବୃତ୍ତି'। ଆବେଦନ: https://scholarships.gov.in/"}
     return replies.get(lang, replies["en"])
 
 # ==============================
-# MAIN CHATBOT — Gemini answers EVERYTHING
+# CHATBOT
 # ==============================
 @routes.route("/chat", methods=["GET", "POST"])
 def chat():
     if request.method == "GET":
         return jsonify({"message": "Chatbot is running!"})
-
     data = request.get_json()
     message = data.get("message", "").strip()
     lang = data.get("lang", "en")
     email = data.get("email", "")
-
     if not message:
         return jsonify({"reply": "Please type a message!", "source": "error"})
-
-    # Get user profile for personalized answers
     user_profile = ""
     if email:
         try:
@@ -676,62 +723,176 @@ def chat():
             user = cur.fetchone()
             conn.close()
             if user:
-                user_profile = (
-                    f"Student profile: Name={user['name']}, "
-                    f"Education={user['education'] or 'not set'}, "
-                    f"Category={user['category'] or 'not set'}, "
-                    f"State={user['state'] or 'not set'}, "
-                    f"Income=Rs.{user['income'] or 'not set'}, "
-                    f"Course={user['course'] or 'not set'}"
-                )
+                user_profile = (f"Student profile: Name={user['name']}, Education={user['education'] or 'not set'}, Category={user['category'] or 'not set'}, State={user['state'] or 'not set'}, Income=Rs.{user['income'] or 'not set'}, Course={user['course'] or 'not set'}")
         except:
             pass
-
-    lang_instruction = {
-        "hi": "Reply in Hindi language only.",
-        "od": "Reply in Odia language only."
-    }.get(lang, "Reply in English.")
-
-    system_prompt = f"""You are ScholarAI, an expert Indian scholarship assistant.
-ALWAYS answer every question helpfully. Never say you cannot help.
-Key scholarships you know:
-- AICTE Pragati and Saksham (Rs.50,000/yr) - https://www.aicte-india.org/
-- PM Scholarship (Rs.25,000/yr) - https://ksb.gov.in/
-- INSPIRE (Rs.80,000/yr) - https://online-inspire.gov.in/
-- NSP National Portal - https://scholarships.gov.in/
-- Odisha Medhabruti (Rs.15,000/yr) - https://dheodisha.gov.in/
-- Odisha Gopabandhu (Rs.12,000/yr) - https://scholarships.gov.in/
-- Odisha Prerana for girls (Rs.10,000/yr) - https://scholarships.gov.in/
-- Odisha Merit Scholarship (Rs.10,000/yr) - https://dheodisha.gov.in/
-- Maharashtra MahaDBT - https://mahadbt.maharashtra.gov.in/
-- Post Matric SC (Rs.15,000/yr) - https://scholarships.gov.in/
-- Post Matric ST (Rs.15,000/yr) - https://scholarships.gov.in/
-- Post Matric OBC (Rs.12,000/yr) - https://scholarships.gov.in/
-- Begum Hazrat Mahal minority girls - https://maef.nic.in/
-- Reliance Foundation (Rs.2,00,000/yr) - https://www.reliancefoundation.org/
-- Sitaram Jindal (Rs.2,000/month) - https://sitaramjindalfoundation.org/
-Instructions:
-1. ALWAYS give a direct helpful answer
-2. List 3 to 5 relevant scholarships with name, amount and link
-3. Use the student profile to personalize your answer
-4. Be warm, friendly and encouraging
-5. Keep answer to 5 to 8 lines maximum
-6. {lang_instruction}
+    lang_instruction = {"hi": "Reply in Hindi language only.", "od": "Reply in Odia language only."}.get(lang, "Reply in English.")
+    system_prompt = f"""You are ScholarAI, an expert Indian scholarship assistant. ALWAYS answer every question helpfully.
+Key scholarships: AICTE Pragati/Saksham (Rs.50,000) aicte-india.org, PM Scholarship (Rs.25,000) ksb.gov.in, INSPIRE (Rs.80,000) online-inspire.gov.in, NSP scholarships.gov.in, Odisha Medhabruti (Rs.15,000) dheodisha.gov.in, MahaDBT mahadbt.maharashtra.gov.in, Reliance Foundation (Rs.2,00,000), Post Matric SC/ST/OBC scholarships.gov.in
+Instructions: 1. Give direct helpful answer 2. List 3-5 scholarships with amounts and links 3. Personalize based on student profile 4. Be warm and encouraging 5. Keep to 5-8 lines 6. {lang_instruction}
 {user_profile}"""
-
-    # GEMINI answers ALL questions — no keyword blocking at all
     if GEMINI_AVAILABLE:
         try:
-            full_prompt = f"{system_prompt}\n\nStudent question: {message}"
-            response = gemini_model.generate_content(full_prompt)
-            reply = response.text
-            return jsonify({"reply": reply, "source": "gemini"})
+            response = gemini_model.generate_content(f"{system_prompt}\n\nStudent question: {message}")
+            return jsonify({"reply": response.text, "source": "gemini"})
         except Exception as e:
             print(f"Gemini error: {e}")
-
-    # Only reaches here if Gemini completely fails
     reply = generate_reply(message, lang)
     return jsonify({"reply": reply, "source": "keyword"})
+
+# ==============================
+# PDF DOWNLOAD
+# ==============================
+@routes.route("/download_scholarships_pdf", methods=["GET", "POST"])
+def download_scholarships_pdf():
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+
+        email = request.args.get("email", "")
+        user_name = "Student"
+        user_state = ""
+        if email:
+            try:
+                conn = get_db()
+                cur = conn.cursor()
+                cur.execute("SELECT name, state FROM users WHERE email=?", (email,))
+                user = cur.fetchone()
+                conn.close()
+                if user:
+                    user_name = user["name"] or "Student"
+                    user_state = user["state"] or ""
+            except:
+                pass
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        elements.append(Paragraph("<b>🎓 ScholarAI — Scholarship Report</b>", styles["Title"]))
+        elements.append(Spacer(1, 5))
+        elements.append(Paragraph(f"<i>Prepared for: {user_name} | India's Smartest Scholarship Finder</i>", styles["Normal"]))
+        elements.append(Spacer(1, 15))
+
+        elements.append(Paragraph("<b>📋 Top National Scholarships</b>", styles["Heading2"]))
+        elements.append(Spacer(1, 8))
+        national_data = [["#", "Scholarship Name", "Amount", "Category", "Deadline"]]
+        national_data.extend([
+            ["1", "AICTE Pragati Scholarship", "Rs.50,000/yr", "Girls/Engineering", "31 Dec 2026"],
+            ["2", "AICTE Saksham Scholarship", "Rs.50,000/yr", "Differently Abled", "31 Dec 2026"],
+            ["3", "PM Scholarship Scheme", "Rs.25,000/yr", "Ex-Servicemen Wards", "15 Oct 2026"],
+            ["4", "INSPIRE Scholarship", "Rs.80,000/yr", "Science Students", "15 Sep 2026"],
+            ["5", "NSP National Portal", "Varies", "All Categories", "30 Nov 2026"],
+            ["6", "Central Sector Scholarship", "Rs.12,000/yr", "Merit Based", "31 Oct 2026"],
+            ["7", "Sitaram Jindal", "Rs.2,000/mo", "All Students", "31 Aug 2026"],
+            ["8", "Vidyasaarathi", "Rs.20,000/yr", "All Students", "31 Oct 2026"],
+            ["9", "Post Matric SC", "Rs.15,000/yr", "SC Students", "30 Nov 2026"],
+            ["10", "Post Matric ST", "Rs.15,000/yr", "ST Students", "30 Nov 2026"],
+            ["11", "Post Matric OBC", "Rs.12,000/yr", "OBC Students", "30 Nov 2026"],
+            ["12", "Minority Merit cum Means", "Rs.30,000/yr", "Minority UG", "31 Oct 2026"],
+            ["13", "Ishan Uday (NE States)", "Rs.7,800/mo", "NE Region", "30 Sep 2026"],
+            ["14", "Begum Hazrat Mahal", "Rs.12,000/yr", "Minority Girls", "30 Sep 2026"],
+            ["15", "Reliance Foundation", "Rs.2,00,000/yr", "Merit Based", "31 Jan 2027"],
+        ])
+        t1 = Table(national_data, colWidths=[25, 165, 80, 120, 85])
+        t1.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#667eea")),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("ALIGN", (0,0), (-1,-1), "CENTER"),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#f0f4ff")]),
+            ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#dddddd")),
+            ("TOPPADDING", (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+        ]))
+        elements.append(t1)
+        elements.append(Spacer(1, 15))
+
+        elements.append(Paragraph("<b>🏛️ Odisha State Scholarships</b>", styles["Heading2"]))
+        elements.append(Spacer(1, 8))
+        odisha_data = [["#", "Scholarship Name", "Amount", "Category", "Deadline"]]
+        odisha_data.extend([
+            ["1", "Odisha Medhabruti", "Rs.15,000/yr", "Science Students", "30 Sep 2026"],
+            ["2", "Gopabandhu Scholarship", "Rs.12,000/yr", "All Students", "31 Oct 2026"],
+            ["3", "Prerana (Girls)", "Rs.10,000/yr", "Odisha Girls", "31 Oct 2026"],
+            ["4", "Odisha Merit Scholarship", "Rs.10,000/yr", "Merit Based", "30 Nov 2026"],
+            ["5", "Odisha Post Matric (SC)", "Rs.18,000/yr", "SC Students", "31 Oct 2026"],
+            ["6", "Odisha Post Matric (ST)", "Rs.18,000/yr", "ST Students", "31 Oct 2026"],
+            ["7", "Biju Swasthya Kalyan", "Rs.25,000/yr", "Medical Students", "31 Dec 2026"],
+            ["8", "Odisha Police Welfare", "Rs.10,000/yr", "Police Wards", "30 Nov 2026"],
+        ])
+        t2 = Table(odisha_data, colWidths=[25, 165, 80, 120, 85])
+        t2.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#764ba2")),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("ALIGN", (0,0), (-1,-1), "CENTER"),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#f5f0ff")]),
+            ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#dddddd")),
+            ("TOPPADDING", (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+        ]))
+        elements.append(t2)
+        elements.append(Spacer(1, 15))
+
+        elements.append(Paragraph("<b>🔗 Key Application Links</b>", styles["Heading2"]))
+        elements.append(Spacer(1, 5))
+        for name, link in [
+            ("National Scholarship Portal", "scholarships.gov.in"),
+            ("AICTE Scholarships", "aicte-india.org"),
+            ("Odisha Scholarships", "dheodisha.gov.in"),
+            ("Maharashtra MahaDBT", "mahadbt.maharashtra.gov.in"),
+            ("INSPIRE Science", "online-inspire.gov.in"),
+        ]:
+            elements.append(Paragraph(f"• <b>{name}:</b> https://www.{link}", styles["Normal"]))
+            elements.append(Spacer(1, 3))
+
+        elements.append(Spacer(1, 15))
+        elements.append(Paragraph("<i>Generated by ScholarAI — India's Smartest Scholarship Finder | Apply at scholarships.gov.in</i>", styles["Normal"]))
+
+        doc.build(elements)
+        buffer.seek(0)
+        return send_file(buffer, as_attachment=True, download_name="ScholarAI_Scholarships.pdf", mimetype="application/pdf")
+    except ImportError:
+        return jsonify({"error": "Please run: pip install reportlab==4.0.4"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ==============================
+# STATE MAP DATA
+# ==============================
+@routes.route("/get_map_data", methods=["GET"])
+def get_map_data():
+    map_data = [
+        {"state": "Odisha", "count": 45, "top": "Medhabruti, Gopabandhu, Prerana", "link": "https://scholarship.odisha.gov.in", "lat": 20.9517, "lng": 85.0985},
+        {"state": "Maharashtra", "count": 38, "top": "MahaDBT, EBC, OBC Scholarship", "link": "https://mahadbt.maharashtra.gov.in", "lat": 19.7515, "lng": 75.7139},
+        {"state": "Karnataka", "count": 32, "top": "Sanchi Scholarship, SC/ST Scheme", "link": "https://scholarships.gov.in", "lat": 15.3173, "lng": 75.7139},
+        {"state": "Tamil Nadu", "count": 30, "top": "Chief Minister Scholarship, BC/MBC", "link": "https://scholarships.gov.in", "lat": 11.1271, "lng": 78.6569},
+        {"state": "Uttar Pradesh", "count": 42, "top": "UP Scholarship, Samajwadi Scholarship", "link": "https://scholarship.up.gov.in", "lat": 26.8467, "lng": 80.9462},
+        {"state": "West Bengal", "count": 28, "top": "Aikyashree, Kanyashree, SC/ST", "link": "https://scholarships.gov.in", "lat": 22.9868, "lng": 87.8550},
+        {"state": "Rajasthan", "count": 25, "top": "Devnarayan Scholarship, SC/ST", "link": "https://scholarships.gov.in", "lat": 27.0238, "lng": 74.2179},
+        {"state": "Madhya Pradesh", "count": 27, "top": "Vikramaditya Scholarship, OBC", "link": "https://scholarships.gov.in", "lat": 22.9734, "lng": 78.6569},
+        {"state": "Bihar", "count": 24, "top": "Bihar Post Matric, BC/EBC", "link": "https://scholarships.gov.in", "lat": 25.0961, "lng": 85.3131},
+        {"state": "Gujarat", "count": 22, "top": "Gujarat Scholarship, SC/ST/OBC", "link": "https://scholarships.gov.in", "lat": 22.2587, "lng": 71.1924},
+        {"state": "Andhra Pradesh", "count": 26, "top": "AP Scholarship, Jagananna", "link": "https://scholarships.gov.in", "lat": 15.9129, "lng": 79.7400},
+        {"state": "Telangana", "count": 24, "top": "TS ePass, SC/ST Scholarship", "link": "https://telanganaepass.cgg.gov.in", "lat": 18.1124, "lng": 79.0193},
+        {"state": "Kerala", "count": 20, "top": "Kerala Scholarship, DCSE", "link": "https://scholarships.gov.in", "lat": 10.8505, "lng": 76.2711},
+        {"state": "Punjab", "count": 18, "top": "Punjab Post Matric, SC/ST", "link": "https://scholarships.gov.in", "lat": 31.1471, "lng": 75.3412},
+        {"state": "Haryana", "count": 19, "top": "Haryana Scholarship, BC/EWS", "link": "https://scholarships.gov.in", "lat": 29.0588, "lng": 76.0856},
+        {"state": "Jharkhand", "count": 21, "top": "Jharkhand E-Kalyan, SC/ST/OBC", "link": "https://ekalyan.cgg.gov.in", "lat": 23.6102, "lng": 85.2799},
+        {"state": "Assam", "count": 16, "top": "Assam Scholarship, Ishan Uday", "link": "https://scholarships.gov.in", "lat": 26.2006, "lng": 92.9376},
+        {"state": "Chhattisgarh", "count": 17, "top": "CG Scholarship, SC/ST", "link": "https://scholarships.gov.in", "lat": 21.2787, "lng": 81.8661},
+        {"state": "Himachal Pradesh", "count": 14, "top": "HP Merit, Dr Ambedkar Scheme", "link": "https://scholarships.gov.in", "lat": 31.1048, "lng": 77.1734},
+        {"state": "Uttarakhand", "count": 13, "top": "UK Scholarship, SC/ST/OBC", "link": "https://scholarships.gov.in", "lat": 30.0668, "lng": 79.0193},
+    ]
+    return jsonify(map_data)
 
 # ==============================
 # EMAIL NOTIFICATIONS
@@ -745,14 +906,13 @@ def send_email(to_email, subject, body_html):
         if not mail:
             print("❌ Mail extension not found!")
             return False
-        print(f"📧 Trying to send email to: {to_email}")
         msg = Message(subject=subject, recipients=[to_email], html=body_html)
         mail.send(msg)
-        print(f"✅ Email sent successfully to: {to_email}")
+        print(f"✅ Email sent to: {to_email}")
         return True
     except Exception as e:
-        print(f"❌ EXACT EMAIL ERROR: {e}")
-        return False 
+        print(f"❌ Email error: {e}")
+        return False
 
 @routes.route("/send_welcome_email", methods=["POST"])
 def send_welcome_email():
@@ -760,50 +920,23 @@ def send_welcome_email():
         data = request.get_json()
         email = data.get("email")
         name = data.get("name")
-        html = f"""
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        html = f"""<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
             <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:30px;border-radius:12px;text-align:center;">
                 <h1 style="color:white;margin:0;">🎓 Welcome to ScholarAI!</h1>
             </div>
             <div style="background:white;padding:30px;border-radius:12px;margin-top:20px;border:1px solid #eee;">
-                <h2 style="color:#333;">Hello {name}! 👋</h2>
-                <p style="color:#555;font-size:16px;line-height:1.6;">
-                    Welcome to ScholarAI — India's smartest scholarship finder!
-                    Your account has been created successfully.
-                </p>
-                <div style="background:#f0f4ff;padding:20px;border-radius:8px;margin:20px 0;">
-                    <h3 style="color:#667eea;margin-top:0;">What you can do:</h3>
-                    <ul style="color:#555;line-height:2;">
-                        <li>🎯 Get AI-matched scholarships based on your profile</li>
-                        <li>💬 Chat with AI assistant for guidance</li>
-                        <li>📋 Upload and manage your documents</li>
-                        <li>🔖 Save scholarships you like</li>
-                        <li>⏰ Get deadline reminders</li>
-                    </ul>
-                </div>
+                <h2>Hello {name}! 👋</h2>
+                <p>Welcome to ScholarAI — India's smartest scholarship finder!</p>
+                <ul><li>🎯 AI-matched scholarships</li><li>💬 AI chatbot guidance</li><li>📋 Document management</li><li>⏰ Deadline reminders</li></ul>
                 <div style="text-align:center;margin-top:25px;">
-                    <a href="http://127.0.0.1:5000/dashboard"
-                       style="background:linear-gradient(135deg,#667eea,#764ba2);
-                              color:white;padding:14px 30px;border-radius:8px;
-                              text-decoration:none;font-size:16px;font-weight:bold;">
-                        Go to Dashboard →
-                    </a>
+                    <a href="http://127.0.0.1:5000/dashboard" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:14px 30px;border-radius:8px;text-decoration:none;font-weight:bold;">Go to Dashboard →</a>
                 </div>
-                <p style="color:#999;font-size:13px;margin-top:25px;text-align:center;">
-                    Best of luck with your scholarship applications! 🌟
-                </p>
             </div>
-        </div>
-        """
-        success = send_email(
-            to_email=email,
-            subject="🎓 Welcome to ScholarAI!",
-            body_html=html
-        )
+        </div>"""
+        success = send_email(to_email=email, subject="🎓 Welcome to ScholarAI!", body_html=html)
         if success:
             return jsonify({"message": "Welcome email sent!"})
-        else:
-            return jsonify({"error": "Failed to send email"}), 500
+        return jsonify({"error": "Failed to send email"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -820,57 +953,28 @@ def send_deadline_reminder():
         if not user:
             return jsonify({"error": "User not found"}), 404
         name = user["name"]
-        html = f"""
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-            <div style="background:linear-gradient(135deg,#f093fb,#f5576c);padding:30px;
-                        border-radius:12px;text-align:center;">
+        html = f"""<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+            <div style="background:linear-gradient(135deg,#f093fb,#f5576c);padding:30px;border-radius:12px;text-align:center;">
                 <h1 style="color:white;margin:0;">⏰ Scholarship Deadline Alert!</h1>
             </div>
             <div style="background:white;padding:30px;border-radius:12px;margin-top:20px;border:1px solid #eee;">
-                <h2 style="color:#333;">Hello {name}!</h2>
-                <p style="color:#555;">These scholarships have upcoming deadlines — apply now!</p>
-                <table style="width:100%;border-collapse:collapse;margin-top:15px;">
-                    <tr style="background:#f8f9ff;">
-                        <th style="padding:10px;text-align:left;color:#667eea;">Scholarship</th>
-                        <th style="padding:10px;text-align:left;color:#667eea;">Amount</th>
-                        <th style="padding:10px;text-align:left;color:#667eea;">Deadline</th>
-                    </tr>
-                    <tr>
-                        <td style="padding:10px;border-bottom:1px solid #eee;">AICTE Pragati</td>
-                        <td style="padding:10px;border-bottom:1px solid #eee;color:#667eea;">Rs.50,000/yr</td>
-                        <td style="padding:10px;border-bottom:1px solid #eee;">31 Dec 2026</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:10px;border-bottom:1px solid #eee;">NSP Portal</td>
-                        <td style="padding:10px;border-bottom:1px solid #eee;color:#667eea;">Varies</td>
-                        <td style="padding:10px;border-bottom:1px solid #eee;">30 Nov 2026</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:10px;">PM Scholarship</td>
-                        <td style="padding:10px;color:#667eea;">Rs.25,000/yr</td>
-                        <td style="padding:10px;">15 Oct 2026</td>
-                    </tr>
+                <h2>Hello {name}!</h2>
+                <p>These scholarships have upcoming deadlines — apply now!</p>
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr style="background:#f8f9ff;"><th style="padding:10px;color:#667eea;">Scholarship</th><th style="padding:10px;color:#667eea;">Amount</th><th style="padding:10px;color:#667eea;">Deadline</th></tr>
+                    <tr><td style="padding:10px;">AICTE Pragati</td><td style="padding:10px;color:#667eea;">Rs.50,000/yr</td><td style="padding:10px;">31 Dec 2026</td></tr>
+                    <tr><td style="padding:10px;">NSP Portal</td><td style="padding:10px;color:#667eea;">Varies</td><td style="padding:10px;">30 Nov 2026</td></tr>
+                    <tr><td style="padding:10px;">PM Scholarship</td><td style="padding:10px;color:#667eea;">Rs.25,000/yr</td><td style="padding:10px;">15 Oct 2026</td></tr>
                 </table>
                 <div style="text-align:center;margin-top:25px;">
-                    <a href="http://127.0.0.1:5000/dashboard"
-                       style="background:linear-gradient(135deg,#667eea,#764ba2);
-                              color:white;padding:14px 30px;border-radius:8px;
-                              text-decoration:none;font-size:16px;font-weight:bold;">
-                        View All Scholarships →
-                    </a>
+                    <a href="http://127.0.0.1:5000/dashboard" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:14px 30px;border-radius:8px;text-decoration:none;font-weight:bold;">View All Scholarships →</a>
                 </div>
             </div>
-        </div>
-        """
-        success = send_email(
-            to_email=email,
-            subject="⏰ Scholarship Deadlines Coming Up — Apply Now!",
-            body_html=html
-        )
+        </div>"""
+        success = send_email(to_email=email, subject="⏰ Scholarship Deadlines Coming Up!", body_html=html)
         if success:
             return jsonify({"message": f"Reminder sent to {email}!"})
-        else:
-            return jsonify({"error": "Failed to send email"}), 500
+        return jsonify({"error": "Failed to send email"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -880,5 +984,5 @@ def send_deadline_reminder():
 @routes.route("/test")
 def test():
     all_s = get_all_scholarships_combined()
-    status = "✅ Gemini AI ready (FREE 1500/day)" if GEMINI_AVAILABLE else "❌ Gemini not working"
+    status = "✅ Gemini AI ready" if GEMINI_AVAILABLE else "❌ Gemini not working"
     return f"Server OK! Scholarships: {len(all_s)} | {status}"
