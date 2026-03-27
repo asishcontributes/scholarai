@@ -195,7 +195,8 @@ def get_profile():
             data = request.get_json()
             email = data.get("email", "") if data else ""
         else:
-            email = request.args.get("email", "")
+           email = request.args.get("email", "")
+           state = request.args.get("state", "")
         if not email:
             return jsonify({"error": "No email provided"}), 400
         conn = get_db()
@@ -752,8 +753,9 @@ def download_scholarships_pdf():
         from reportlab.lib.styles import getSampleStyleSheet
 
         email = request.args.get("email", "")
+        state_filter = request.args.get("state", "").strip().lower()
+
         user_name = "Student"
-        user_state = ""
         if email:
             try:
                 conn = get_db()
@@ -763,41 +765,51 @@ def download_scholarships_pdf():
                 conn.close()
                 if user:
                     user_name = user["name"] or "Student"
-                    user_state = user["state"] or ""
+                    if not state_filter:
+                        state_filter = (user["state"] or "").lower()
             except:
                 pass
+
+        # Get scholarships filtered by state
+        all_scholarships = get_all_scholarships_combined()
+        national = []
+        state_specific = []
+
+        for s in all_scholarships:
+            s_state = s.get("state", "all").lower()
+            s_type = s.get("type", "National")
+            if s_state == "all" or s_type == "National":
+                national.append(s)
+            elif state_filter and (s_state == state_filter or state_filter in s_type.lower()):
+                state_specific.append(s)
 
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
         elements = []
         styles = getSampleStyleSheet()
 
-        elements.append(Paragraph("<b>🎓 ScholarAI — Scholarship Report</b>", styles["Title"]))
+        # Title
+        title = f"ScholarAI — Scholarship Report"
+        if state_filter:
+            title += f" ({state_filter.title()})"
+        elements.append(Paragraph(f"<b>🎓 {title}</b>", styles["Title"]))
         elements.append(Spacer(1, 5))
         elements.append(Paragraph(f"<i>Prepared for: {user_name} | India's Smartest Scholarship Finder</i>", styles["Normal"]))
         elements.append(Spacer(1, 15))
 
+        # National Scholarships Table
         elements.append(Paragraph("<b>📋 Top National Scholarships</b>", styles["Heading2"]))
         elements.append(Spacer(1, 8))
-        national_data = [["#", "Scholarship Name", "Amount", "Category", "Deadline"]]
-        national_data.extend([
-            ["1", "AICTE Pragati Scholarship", "Rs.50,000/yr", "Girls/Engineering", "31 Dec 2026"],
-            ["2", "AICTE Saksham Scholarship", "Rs.50,000/yr", "Differently Abled", "31 Dec 2026"],
-            ["3", "PM Scholarship Scheme", "Rs.25,000/yr", "Ex-Servicemen Wards", "15 Oct 2026"],
-            ["4", "INSPIRE Scholarship", "Rs.80,000/yr", "Science Students", "15 Sep 2026"],
-            ["5", "NSP National Portal", "Varies", "All Categories", "30 Nov 2026"],
-            ["6", "Central Sector Scholarship", "Rs.12,000/yr", "Merit Based", "31 Oct 2026"],
-            ["7", "Sitaram Jindal", "Rs.2,000/mo", "All Students", "31 Aug 2026"],
-            ["8", "Vidyasaarathi", "Rs.20,000/yr", "All Students", "31 Oct 2026"],
-            ["9", "Post Matric SC", "Rs.15,000/yr", "SC Students", "30 Nov 2026"],
-            ["10", "Post Matric ST", "Rs.15,000/yr", "ST Students", "30 Nov 2026"],
-            ["11", "Post Matric OBC", "Rs.12,000/yr", "OBC Students", "30 Nov 2026"],
-            ["12", "Minority Merit cum Means", "Rs.30,000/yr", "Minority UG", "31 Oct 2026"],
-            ["13", "Ishan Uday (NE States)", "Rs.7,800/mo", "NE Region", "30 Sep 2026"],
-            ["14", "Begum Hazrat Mahal", "Rs.12,000/yr", "Minority Girls", "30 Sep 2026"],
-            ["15", "Reliance Foundation", "Rs.2,00,000/yr", "Merit Based", "31 Jan 2027"],
-        ])
-        t1 = Table(national_data, colWidths=[25, 165, 80, 120, 85])
+        nat_data = [["#", "Scholarship Name", "Amount", "Category", "Deadline"]]
+        for i, s in enumerate(national[:15], 1):
+            nat_data.append([
+                str(i),
+                s["name"][:35],
+                s.get("amount", "As per scheme")[:20],
+                s.get("category", "All").title()[:20],
+                s.get("deadline", "N/A")
+            ])
+        t1 = Table(nat_data, colWidths=[25, 165, 80, 120, 85])
         t1.setStyle(TableStyle([
             ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#667eea")),
             ("TEXTCOLOR", (0,0), (-1,0), colors.white),
@@ -813,35 +825,37 @@ def download_scholarships_pdf():
         elements.append(t1)
         elements.append(Spacer(1, 15))
 
-        elements.append(Paragraph("<b>🏛️ Odisha State Scholarships</b>", styles["Heading2"]))
-        elements.append(Spacer(1, 8))
-        odisha_data = [["#", "Scholarship Name", "Amount", "Category", "Deadline"]]
-        odisha_data.extend([
-            ["1", "Odisha Medhabruti", "Rs.15,000/yr", "Science Students", "30 Sep 2026"],
-            ["2", "Gopabandhu Scholarship", "Rs.12,000/yr", "All Students", "31 Oct 2026"],
-            ["3", "Prerana (Girls)", "Rs.10,000/yr", "Odisha Girls", "31 Oct 2026"],
-            ["4", "Odisha Merit Scholarship", "Rs.10,000/yr", "Merit Based", "30 Nov 2026"],
-            ["5", "Odisha Post Matric (SC)", "Rs.18,000/yr", "SC Students", "31 Oct 2026"],
-            ["6", "Odisha Post Matric (ST)", "Rs.18,000/yr", "ST Students", "31 Oct 2026"],
-            ["7", "Biju Swasthya Kalyan", "Rs.25,000/yr", "Medical Students", "31 Dec 2026"],
-            ["8", "Odisha Police Welfare", "Rs.10,000/yr", "Police Wards", "30 Nov 2026"],
-        ])
-        t2 = Table(odisha_data, colWidths=[25, 165, 80, 120, 85])
-        t2.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#764ba2")),
-            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-            ("FONTSIZE", (0,0), (-1,-1), 8),
-            ("ALIGN", (0,0), (-1,-1), "CENTER"),
-            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-            ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#f5f0ff")]),
-            ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#dddddd")),
-            ("TOPPADDING", (0,0), (-1,-1), 5),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 5),
-        ]))
-        elements.append(t2)
-        elements.append(Spacer(1, 15))
+        # State-specific Scholarships Table
+        if state_specific:
+            state_title = state_filter.title()
+            elements.append(Paragraph(f"<b>🏛️ {state_title} State Scholarships</b>", styles["Heading2"]))
+            elements.append(Spacer(1, 8))
+            state_data = [["#", "Scholarship Name", "Amount", "Category", "Deadline"]]
+            for i, s in enumerate(state_specific[:15], 1):
+                state_data.append([
+                    str(i),
+                    s["name"][:35],
+                    s.get("amount", "As per scheme")[:20],
+                    s.get("category", "All").title()[:20],
+                    s.get("deadline", "N/A")
+                ])
+            t2 = Table(state_data, colWidths=[25, 165, 80, 120, 85])
+            t2.setStyle(TableStyle([
+                ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#764ba2")),
+                ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+                ("FONTSIZE", (0,0), (-1,-1), 8),
+                ("ALIGN", (0,0), (-1,-1), "CENTER"),
+                ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+                ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#f5f0ff")]),
+                ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#dddddd")),
+                ("TOPPADDING", (0,0), (-1,-1), 5),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+            ]))
+            elements.append(t2)
+            elements.append(Spacer(1, 15))
 
+        # Links
         elements.append(Paragraph("<b>🔗 Key Application Links</b>", styles["Heading2"]))
         elements.append(Spacer(1, 5))
         for name, link in [
@@ -855,11 +869,13 @@ def download_scholarships_pdf():
             elements.append(Spacer(1, 3))
 
         elements.append(Spacer(1, 15))
-        elements.append(Paragraph("<i>Generated by ScholarAI — India's Smartest Scholarship Finder | Apply at scholarships.gov.in</i>", styles["Normal"]))
+        elements.append(Paragraph("<i>Generated by ScholarAI — India's Smartest Scholarship Finder</i>", styles["Normal"]))
 
         doc.build(elements)
         buffer.seek(0)
-        return send_file(buffer, as_attachment=True, download_name="ScholarAI_Scholarships.pdf", mimetype="application/pdf")
+        fname = f"ScholarAI_{state_filter.title() if state_filter else 'All'}_Scholarships.pdf"
+        return send_file(buffer, as_attachment=True, download_name=fname, mimetype="application/pdf")
+
     except ImportError:
         return jsonify({"error": "Please run: pip install reportlab==4.0.4"}), 500
     except Exception as e:

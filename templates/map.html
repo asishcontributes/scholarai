@@ -234,6 +234,7 @@ function getRadius(count) {
 // ── Fetch ALL scholarships for a state from backend ──
 function showStateScholarships(d, listItem) {
   // Highlight active sidebar item
+   selectedState = d.state;
   if (activeItem) activeItem.classList.remove('active');
   if (listItem) { listItem.classList.add('active'); activeItem = listItem; }
 
@@ -325,8 +326,15 @@ fetch('/get_map_data')
     });
   });
 
+let selectedState = '';
+
 function downloadPDF() {
-  window.location.href = '/download_scholarships_pdf';
+  const email = localStorage.getItem('userEmail') || '';
+  if (selectedState) {
+    window.location.href = `/download_scholarships_pdf?email=${encodeURIComponent(email)}&state=${encodeURIComponent(selectedState)}`;
+  } else {
+    window.location.href = `/download_scholarships_pdf?email=${encodeURIComponent(email)}`;
+  }
 }
 </script>
 </body>
